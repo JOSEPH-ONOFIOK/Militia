@@ -77,8 +77,8 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ handle, ref: loadRef(), cf }),
     });
-    const d = await res.json();
-    if (!res.ok) return { error: d.error as string };
+    const d = await res.json().catch(() => ({}));
+    if (!res.ok) return { error: (d.error as string) ?? "Sign in failed. Please try again." };
     setRecruit(d.recruit);
     intelChanged();
     return { isNew: d.isNew as boolean, recruit: d.recruit as PublicRecruit };

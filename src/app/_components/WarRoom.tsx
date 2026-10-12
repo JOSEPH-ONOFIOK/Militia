@@ -74,6 +74,7 @@ export default function WarRoom() {
   const [coach, setCoach] = useState(false); // "start here" pointer to the tasks panel
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
   const sideRef = useRef<HTMLElement>(null);
+  const signing = useRef(false);
 
   const queue = useRef<{ text: string; tone: Tone }[]>([]);
   const timer = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -256,7 +257,12 @@ export default function WarRoom() {
       err();
       return print(["INVALID HANDLE. LETTERS, NUMBERS, _ · MAX 15.", "red"]);
     }
-    const res = await devSignIn(h, cfToken ?? undefined);
+    if (signing.current) return;
+    signing.current = true;
+    setBusy(true);
+    const res = await devSignIn(h, cfToken ?? undefined).catch(() => ({ error: "Network error. Please try again." }) as { error: string; recruit?: undefined; isNew?: undefined });
+    signing.current = false;
+    setBusy(false);
     if (res.error) {
       err();
       return print([`! ${res.error.toUpperCase()}`, "red"]);

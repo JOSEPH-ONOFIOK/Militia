@@ -2,11 +2,21 @@ import { authMode, clientIp, getSession, hasSecret, sessionCookie, verifyTurnsti
 import { bad } from "@/lib/api";
 import { enroll } from "@/lib/enroll";
 import { toPublic } from "@/lib/game";
-import { getRecruit, store } from "@/lib/store";
+import { DbNotConfigured, getRecruit, store } from "@/lib/store";
 import { isValidHandle, normalizeHandle } from "@/lib/swole";
 
 // Temporary sign in by typing an X handle. Turns off automatically once X sign in is configured.
 export async function POST(req: Request) {
+  try {
+    return await signIn(req);
+  } catch (e) {
+    if (e instanceof DbNotConfigured) return bad("Sign in is not available yet: the database is not configured.", 503);
+    console.error("handle sign in failed", e);
+    return bad("Something went wrong. Please try again.", 500);
+  }
+}
+
+async function signIn(req: Request) {
   if (authMode !== "handle") return bad("Please use Sign in with X.", 404);
   if (!hasSecret) return bad("Sign in is not configured yet (missing SESSION_SECRET).", 503);
 

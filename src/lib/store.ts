@@ -1,4 +1,4 @@
-import { readFile, writeFile, mkdir } from "node:fs/promises";
+import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
 import { computeXp, type Recruit } from "./game";
 
@@ -87,20 +87,33 @@ async function loadMany(handles: string[]) {
 }
 
 // ---------- Local file ----------
-const FILE = join(process.cwd(), ".data", "recruits.json");
-let cache: Record<string, Row> | null = null;
-let writing = Promise.resolve();
+// For local development only. Reads the file fresh on every call: Next.js loads each
+// route as its own bundle, so an in-memory copy would go stale between routes.
+const DIR = join(process.cwd(), ".data");
+const FILE = join(DIR, "recruits.json");
 const windows = new Map<string, { n: number; reset: number }>();
+let queue: Promise<unknown> = Promise.resolve();
 
-async function db() {
-  if (!cache) {
-    try {
-      cache = JSON.parse(await readFile(FILE, "utf8"));
-    } catch {
-      cache = {};
-    }
+async function db(): Promise<Record<string, Row>> {
+  try {
+    return JSON.parse(await readFile(FILE, "utf8"));
+  } catch {
+    return {};
   }
-  return cache!;
+}
+
+// Read, change and write back as one step. A failed write never leaves a ghost record behind.
+function mutate(fn: (d: Record<string, Row>) => void) {
+  const run = queue.then(async () => {
+    const d = await db();
+    fn(d);
+    await mkdir(DIR, { recursive: true });
+    const tmp = `${FILE}.${process.pid}.${Date.now()}.tmp`;
+    await writeFile(tmp, JSON.stringify(d));
+    await rename(tmp, FILE);
+  });
+  queue = run.catch(() => {}); // keep the queue alive after a failure
+  return run;
 }
 
 const file: Store = {
@@ -108,13 +121,9 @@ const file: Store = {
     return (await db())[handle] ?? null;
   },
   async put(row) {
-    const d = await db();
-    d[row.recruit.handle] = row;
-    writing = writing.then(async () => {
-      await mkdir(join(process.cwd(), ".data"), { recursive: true });
-      await writeFile(FILE, JSON.stringify(d));
+    await mutate((d) => {
+      d[row.recruit.handle] = row;
     });
-    await writing;
   },
   async top(n) {
     return (await this.all()).slice(0, n);
@@ -153,7 +162,18 @@ const file: Store = {
   },
 };
 
-export const store: Store = URL_ && TOKEN ? upstash : file;
+// The file store can't work on serverless hosts (read only disk, many instances), so fail loudly there.
+const serverless = !!(process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
+export const dbConfigured = !!(URL_ && TOKEN) || !serverless;
+export class DbNotConfigured extends Error {}
+
+const unconfigured = new Proxy({} as Store, {
+  get() {
+    return () => Promise.reject(new DbNotConfigured("Database not configured: add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN"));
+  },
+});
+
+export const store: Store = URL_ && TOKEN ? upstash : serverless ? unconfigured : file;
 
 export async function getRecruit(handle: string) {
   return (await store.get(handle))?.recruit ?? null;
