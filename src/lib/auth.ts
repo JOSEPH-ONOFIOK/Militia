@@ -10,7 +10,8 @@ const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
 // "x": Sign in with X (set X_CLIENT_ID + SESSION_SECRET). "handle": temporary mode where recruits type their handle.
 export type AuthMode = "x" | "handle";
-export const authMode: AuthMode = X_CLIENT_ID && SECRET ? "x" : "handle";
+// X sign in also needs the shared database, since accounts are stored server side
+export const authMode: AuthMode = X_CLIENT_ID && SECRET && process.env.UPSTASH_REDIS_REST_URL ? "x" : "handle";
 
 export const SESSION_COOKIE = "swole_session";
 export const OAUTH_COOKIE = "swole_oauth";

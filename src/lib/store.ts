@@ -173,6 +173,9 @@ const unconfigured = new Proxy({} as Store, {
   },
 });
 
+// "server": shared database (Upstash). "local": no database yet, each visitor's progress lives in their browser.
+export const storageMode: "server" | "local" = URL_ && TOKEN ? "server" : "local";
+
 export const store: Store = URL_ && TOKEN ? upstash : serverless ? unconfigured : file;
 
 export async function getRecruit(handle: string) {

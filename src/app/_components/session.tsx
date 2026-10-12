@@ -1,9 +1,53 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import type { PublicRecruit } from "@/lib/game";
+import { MISSIONS, isValidWallet, toPublic, type MissionId, type PublicRecruit, type Recruit } from "@/lib/game";
+import { isValidHandle, normalizeHandle, soldierIdForHandle } from "@/lib/swole";
 
-export type AuthInfo = { mode: "x" | "handle"; turnstileSiteKey: string | null };
+export type AuthInfo = { mode: "x" | "handle"; storage: "server" | "local"; turnstileSiteKey: string | null };
+
+// ---------- browser storage (used while no database is configured) ----------
+type LocalDb = { me: string | null; recruits: Record<string, Recruit> };
+const LOCAL = "swole:local";
+
+function readLocal(): LocalDb {
+  try {
+    const v = JSON.parse(localStorage.getItem(LOCAL) ?? "");
+    if (v && typeof v === "object" && v.recruits) return v as LocalDb;
+  } catch {}
+  return { me: null, recruits: {} };
+}
+
+function writeLocal(db: LocalDb) {
+  try {
+    localStorage.setItem(LOCAL, JSON.stringify(db));
+  } catch {}
+}
+
+// Applies an action to the stored recruit, mirroring the server routes
+function localAction(r: Recruit, path: string, body: Record<string, unknown>): string | null {
+  switch (path) {
+    case "/api/mission": {
+      const m = String(body.mission) as MissionId;
+      if (!MISSIONS.some((x) => x.id === m)) return "Unknown mission";
+      r.missions[m] ??= Date.now();
+      return null;
+    }
+    case "/api/wallet": {
+      const w = String(body.wallet ?? "").trim();
+      if (!isValidWallet(w)) return "That doesn't look like a wallet address.";
+      r.wallet = w;
+      return null;
+    }
+    case "/api/drill":
+      r.drillBest = Math.max(r.drillBest, Math.max(0, Math.min(60, Math.floor(Number(body.score) || 0))));
+      return null;
+    case "/api/drill/start":
+      return null;
+    default:
+      return "Not available";
+  }
+}
 
 type Ctx = {
   recruit: PublicRecruit | null;
@@ -54,8 +98,12 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     fetch("/api/me")
       .then((r) => r.json())
       .then((d) => {
-        setRecruit(d.recruit);
         setAuth(d.auth);
+        if (d.auth?.storage === "local") {
+          const db = readLocal();
+          const r = db.me ? db.recruits[db.me] : null;
+          setRecruit(r ? toPublic(r) : null);
+        } else setRecruit(d.recruit);
       })
       .catch(() => {})
       .finally(() => setReady(true));
@@ -72,6 +120,29 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   }, []);
 
   const devSignIn = useCallback(async (handle: string, cf?: string) => {
+    if (auth?.storage === "local") {
+      const h = normalizeHandle(handle);
+      if (!isValidHandle(h)) return { error: "That isn't a valid X handle." };
+      const db = readLocal();
+      const isNew = !db.recruits[h];
+      if (isNew) {
+        const ref = normalizeHandle(loadRef() ?? "");
+        db.recruits[h] = {
+          handle: h,
+          soldierId: soldierIdForHandle(h),
+          referredBy: ref && ref !== h ? ref : undefined,
+          referrals: 0,
+          missions: {},
+          drillBest: 0,
+          createdAt: Date.now(),
+        };
+      }
+      db.me = h;
+      writeLocal(db);
+      const pub = toPublic(db.recruits[h]);
+      setRecruit(pub);
+      return { isNew, recruit: pub };
+    }
     const res = await fetch("/api/auth/handle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -82,9 +153,22 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     setRecruit(d.recruit);
     intelChanged();
     return { isNew: d.isNew as boolean, recruit: d.recruit as PublicRecruit };
-  }, []);
+  }, [auth]);
 
   const call = useCallback(async (path: string, body: Record<string, unknown> = {}) => {
+    if (auth?.storage === "local") {
+      const db = readLocal();
+      const r = db.me ? db.recruits[db.me] : null;
+      if (!r) return { error: "Please sign in first." };
+      const before = toPublic(r).xp;
+      const error = localAction(r, path, body);
+      if (error) return { error };
+      writeLocal(db);
+      const pub = toPublic(r);
+      setRecruit(pub);
+      if (pub.xp > before) window.dispatchEvent(new CustomEvent("swole:xp", { detail: pub.xp - before }));
+      return {};
+    }
     const res = await fetch(path, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -99,12 +183,16 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     }
     intelChanged();
     return {};
-  }, []);
+  }, [auth]);
 
   const signOut = useCallback(async () => {
-    await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
+    if (auth?.storage === "local") {
+      const db = readLocal();
+      db.me = null;
+      writeLocal(db);
+    } else await fetch("/api/auth/logout", { method: "POST" }).catch(() => {});
     setRecruit(null);
-  }, []);
+  }, [auth]);
 
   return (
     <SessionCtx.Provider value={{ recruit, auth, ready, signIn, devSignIn, call, signOut, toast }}>

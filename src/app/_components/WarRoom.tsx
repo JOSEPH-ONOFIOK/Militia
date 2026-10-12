@@ -61,7 +61,7 @@ function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } 
 
 export default function WarRoom() {
   const { recruit, auth, ready, signIn, devSignIn, call, signOut, toast } = useSession();
-  const [intel, setIntel] = useState<Intel | null>(null);
+  const [serverIntel, setIntel] = useState<Intel | null>(null);
   const [lines, setLines] = useState<Line[]>([]);
   const [input, setInput] = useState("");
   const [focus, setFocus] = useState<Focus | null>(null);
@@ -128,6 +128,14 @@ export default function WarRoom() {
     logRef.current?.scrollTo({ top: logRef.current.scrollHeight });
   }, [lines]);
 
+  const local = auth?.storage === "local";
+  // In browser storage mode there is no shared data, so the radar and board show just this recruit
+  const intel: Intel | null = local
+    ? recruit
+      ? { count: 1, top: [recruit], recent: [{ handle: recruit.handle, soldierId: recruit.soldierId }], blips: [{ handle: recruit.handle, xp: recruit.xp }] }
+      : { count: 0, top: [], recent: [], blips: [] }
+    : serverIntel;
+
   // ---------- XP gain popups ----------
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
@@ -147,6 +155,7 @@ export default function WarRoom() {
 
   // ---------- intel feed ----------
   useEffect(() => {
+    if (!auth || auth.storage === "local") return;
     const load = () => fetch("/api/intel").then((r) => r.json()).then(setIntel).catch(() => {});
     load();
     const iv = setInterval(load, 15000);
@@ -155,7 +164,7 @@ export default function WarRoom() {
       clearInterval(iv);
       window.removeEventListener("swole:intel", load);
     };
-  }, []);
+  }, [auth]);
 
   // ---------- boot sequence ----------
   useEffect(() => {
@@ -485,7 +494,7 @@ export default function WarRoom() {
           <span className="brand-name">Swolediers</span>
           <span className="brand-sub">War Room</span>
         </div>
-        <div className="tb-stats hide-sm">
+        <div className="tb-stats hide-sm" hidden={local}>
           <span className="live"><i className="dot" />Live</span>
           <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
         </div>
@@ -739,6 +748,7 @@ export default function WarRoom() {
                   ))}
                 </ol>
               ) : <p className="muted">No one on the board yet. The first recruit takes the top spot.</p>}
+              {local && <p className="fine">The shared leaderboard goes live soon. For now it shows your own progress.</p>}
               <span className="eyebrow">Ranks</span>
               <ol className="ladder">
                 {RANKS.map((k) => (
