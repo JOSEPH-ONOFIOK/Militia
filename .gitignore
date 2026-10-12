@@ -39,3 +39,10 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# local recruit db
+/.data
+!.env.example
+
+# original 1116px source art (848MB), kept locally; the site serves /public/swole
+/public/gif_and_metadata
