@@ -18,7 +18,7 @@ export async function GET(req: Request) {
   return new Response([cols.join(","), ...lines].join("\n"), {
     headers: {
       "Content-Type": "text/csv",
-      "Content-Disposition": `attachment; filename="swolediers-allowlist.csv"`,
+      "Content-Disposition": `attachment; filename="militia-allowlist.csv"`,
     },
   });
 }

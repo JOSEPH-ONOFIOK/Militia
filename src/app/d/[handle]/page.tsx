@@ -10,7 +10,7 @@ export async function generateMetadata({ params }: PageProps<"/d/[handle]">): Pr
   const handle = normalizeHandle((await params).handle);
   if (!isValidHandle(handle)) return {};
   const s = getSoldier(soldierIdForHandle(handle));
-  const title = `@${handle} was drafted as Swoledier #${s.id}`;
+  const title = `@${handle} was drafted as Militia #${s.id}`;
   const description = `${rarityClass(s.rank).label} · rank ${s.rank}/${SUPPLY}. You don't pick your soldier. The Draft does.`;
   return { title, description, openGraph: { title, description }, twitter: { card: "summary_large_image", title, description } };
 }
@@ -19,7 +19,7 @@ export default function DraftCardPage({ params }: PageProps<"/d/[handle]">) {
   return (
     <main className="wrap" style={{ padding: "64px 0", display: "grid", gap: 28, minHeight: "100svh", alignContent: "center" }}>
       <Link href="/" className="pixel" style={{ color: "var(--ink)", textDecoration: "none", fontSize: 16, fontWeight: 700 }}>
-        SWOLEDIERS<span style={{ color: "var(--amber)" }}>_</span>
+        MILITIA<span style={{ color: "var(--amber)" }}>_</span>
       </Link>
       <Suspense fallback={<div className="label">Pulling service record<span className="blink">_</span></div>}>
         {params.then(({ handle }) => <Card raw={handle} />)}

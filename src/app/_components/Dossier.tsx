@@ -7,7 +7,7 @@ export default function Dossier({ soldier, handle }: { soldier: Soldier; handle?
     <div className="panel hud reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
       <div className="dossier-art" style={{ background: "#000", borderRight: "1px solid var(--line)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img src={gifSrc(soldier.id)} alt={`Swoledier #${soldier.id}`} className="px" style={{ width: "100%", aspectRatio: "1" }} />
+        <img src={gifSrc(soldier.id)} alt={`Militia #${soldier.id}`} className="px" style={{ width: "100%", aspectRatio: "1" }} />
         {handle && <span className="stamp">Drafted</span>}
       </div>
       <div style={{ padding: "22px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>

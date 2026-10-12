@@ -179,7 +179,7 @@ export default function WarRoom() {
       window.history.replaceState(null, "", location.pathname + (q.size ? `?${q}` : ""));
     }
     print(
-      ["SWOLE-OS v4.444 // MILITIA COMMAND NETWORK", "dim"],
+      ["MILITIA OS v4.444 // COMMAND NETWORK", "dim"],
       ["ESTABLISHING UPLINK ............ OK", "dim"],
       [`PERSONNEL FILES ON RECORD ...... ${SUPPLY}`, "dim"],
       ["─────────────────────────────────────", "dim"],
@@ -234,7 +234,7 @@ export default function WarRoom() {
       chord();
       print(
         ["", "dim"],
-        [`> DRAFTED: SWOLEDIER NO. ${pad(s.id)}`, "amber"],
+        [`> DRAFTED: MILITIA NO. ${pad(s.id)}`, "amber"],
         [`  CLASS ${rc.label} · RARITY RANK ${s.rank}/${SUPPLY}`, rc.tone === "mythic" ? "pink" : rc.tone === "grunt" ? "ink" : "amber"],
         ...CATEGORIES.map((c) => [`  ${c.toUpperCase().padEnd(11)}${s.traits[c].padEnd(18)}${traitPct(c, s.traits[c]).toFixed(1)}%`, "dim"] as [string, Tone]),
         [`  SERIAL ${serialFor(r.handle, s.id)}`, "dim"],
@@ -300,7 +300,7 @@ export default function WarRoom() {
     const s = getSoldier(recruit.soldierId);
     const rc = rarityClass(s.rank);
     const url = `${location.origin}/d/${recruit.handle}`;
-    const text = `The Draft picked my soldier.\n\nSwoledier #${s.id} · ${rc.label} (rank ${s.rank}/${SUPPLY}) 💪\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
+    const text = `The Draft picked my soldier.\n\nMilitia #${s.id} · ${rc.label} (rank ${s.rank}/${SUPPLY}) 💪\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
     window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
     if (!recruit.missions.share) {
       const r = await call("/api/mission", { mission: "share" });
@@ -315,7 +315,7 @@ export default function WarRoom() {
     const blob = await renderCard(recruit.handle, s, serialFor(recruit.handle, s.id));
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
-    a.download = `swoledier-${s.id}-${recruit.handle}.png`;
+    a.download = `militia-${s.id}-${recruit.handle}.png`;
     a.click();
     print(["DRAFT CARD EXPORTED.", "green"]);
   }
@@ -491,7 +491,7 @@ export default function WarRoom() {
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src="/brand.gif" alt="" width={36} height={36} className="px" />
           </span>
-          <span className="brand-name">Swolediers</span>
+          <span className="brand-name">Militia</span>
           <span className="brand-sub">War Room</span>
         </div>
         <div className="tb-stats hide-sm" hidden={local}>
@@ -580,7 +580,7 @@ export default function WarRoom() {
             }}>
               <span className="eyebrow"><i className="dot" />The Draft is open</span>
               <h1>Get your soldier</h1>
-              <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} and the Draft assigns you one of {SUPPLY.toLocaleString()} Swolediers. It&apos;s yours for good. No rerolls.</p>
+              <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} and the Draft assigns you one of {SUPPLY.toLocaleString()} Militia soldiers. It&apos;s yours for good. No rerolls.</p>
               {auth?.mode === "handle" ? (
                 <>
                   <label className="field">
@@ -653,11 +653,11 @@ export default function WarRoom() {
               <div className="profile">
                 <button className="avatar" onClick={() => setFocus({ id: me.soldierId, handle: me.handle })} aria-label="Open your soldier's file">
                   {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img src={gifSrc(me.soldierId)} alt={`Your soldier, Swoledier ${me.soldierId}`} className="px" />
+                  <img src={gifSrc(me.soldierId)} alt={`Your soldier, Militia #${me.soldierId}`} className="px" />
                 </button>
                 <div className="profile-id">
                   <b>@{me.handle}</b>
-                  <span className="muted">Swoledier #{me.soldierId}</span>
+                  <span className="muted">Militia #{me.soldierId}</span>
                   <span className={`pill tone-${rarity.tone}`}>{rarity.label} · {mySoldier.rank} of {SUPPLY.toLocaleString()}</span>
                 </div>
               </div>

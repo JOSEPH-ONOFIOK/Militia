@@ -2,7 +2,7 @@ import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 
-export const alt = "Swolediers War Room. You don't pick your soldier. The Draft does.";
+export const alt = "Militia War Room. You don't pick your soldier. The Draft does.";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -24,7 +24,7 @@ export default async function Image() {
         </div>
         <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
-            <div style={{ fontSize: 92, fontWeight: 700, lineHeight: 1 }}>SWOLEDIERS</div>
+            <div style={{ fontSize: 92, fontWeight: 700, lineHeight: 1 }}>MILITIA</div>
             <div style={{ fontSize: 52, color: "#ffb000", marginTop: 10 }}>WAR ROOM</div>
             <div style={{ fontSize: 24, marginTop: 34, color: "#9aab8f", maxWidth: 520, lineHeight: 1.4 }}>
               You don&apos;t pick your soldier. The Draft does.

@@ -69,7 +69,7 @@ export default function Decode({ id, ms = 2600, onDone }: { id: number; ms?: num
     <div className="decode">
       <canvas ref={cv} width={N} height={N} className="px" style={{ opacity: live ? 0 : 1 }} />
       {/* eslint-disable-next-line @next/next/no-img-element */}
-      {live && <img src={gifSrc(id)} alt={`Swoledier ${id}`} className="px" />}
+      {live && <img src={gifSrc(id)} alt={`Militia #${id}`} className="px" />}
       <div className="decode-scan" style={{ animationPlayState: live ? "paused" : "running", opacity: live ? 0 : 1 }} />
     </div>
   );

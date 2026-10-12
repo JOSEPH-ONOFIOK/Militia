@@ -3,7 +3,7 @@ import { readFile } from "node:fs/promises";
 import { join } from "node:path";
 import { CATEGORIES, SUPPLY, getSoldier, isValidHandle, normalizeHandle, rarityClass, soldierIdForHandle } from "@/lib/swole";
 
-export const alt = "Swolediers draft card";
+export const alt = "Militia draft card";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";
 
@@ -27,7 +27,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
         <img src={src} width={630} height={630} style={{ imageRendering: "pixelated" }} alt="" />
         <div style={{ width: 8, height: "100%", background: "#ffb000" }} />
         <div style={{ display: "flex", flexDirection: "column", padding: "48px 44px", flex: 1 }}>
-          <div style={{ fontSize: 20, color: "#8b927f", letterSpacing: 3 }}>SWOLEDIERS · DRAFT NOTICE</div>
+          <div style={{ fontSize: 20, color: "#8b927f", letterSpacing: 3 }}>MILITIA · DRAFT NOTICE</div>
           <div style={{ display: "flex", alignItems: "baseline", marginTop: 12 }}>
             <span style={{ fontSize: 40, color: "#8b927f", marginRight: 12 }}>NO.</span>
             <span style={{ fontSize: 96, fontWeight: 700 }}>{String(s.id)}</span>

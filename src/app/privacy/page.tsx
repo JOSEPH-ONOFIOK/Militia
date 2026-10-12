@@ -5,7 +5,7 @@ import ConsentReset from "../_components/ConsentReset";
 
 export const metadata: Metadata = {
   title: "Privacy and Cookies",
-  description: "How Swolediers uses cookies and what information the war room stores about recruits.",
+  description: "How Militia uses cookies and what information the war room stores about recruits.",
   alternates: { canonical: "/privacy" },
 };
 

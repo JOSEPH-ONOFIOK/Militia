@@ -45,7 +45,7 @@ export default function CookieConsent() {
     <div className="consent" role="dialog" aria-labelledby="consent-title" aria-describedby="consent-body">
       <div className="consent-head">
         <span className="consent-icon" aria-hidden><LuCookie /></span>
-        <h2 id="consent-title">Cookies on Swolediers</h2>
+        <h2 id="consent-title">Cookies on Militia</h2>
       </div>
       <p id="consent-body">
         We use essential cookies to keep you signed in and to protect the site from bots. If you accept, we may also use

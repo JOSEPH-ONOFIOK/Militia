@@ -29,7 +29,7 @@ export const RANKS = [
   { name: "CORPORAL", min: 800, perk: "Allowlist raffle entry" },
   { name: "SERGEANT", min: 1300, perk: "Allowlist raffle ×3 entries" },
   { name: "LIEUTENANT", min: 2000, perk: "Allowlist SECURED" },
-  { name: "CAPTAIN", min: 3500, perk: "Allowlist + Swole Council role" },
+  { name: "CAPTAIN", min: 3500, perk: "Allowlist + Militia Council role" },
 ] as const;
 
 export const SECURED_AT = RANKS.find((r) => r.name === "LIEUTENANT")!.min;

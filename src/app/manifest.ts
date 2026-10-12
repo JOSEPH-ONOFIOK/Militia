@@ -2,9 +2,9 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Swolediers War Room",
-    short_name: "Swolediers",
-    description: "Get drafted, climb the ranks and secure your Swolediers allowlist spot.",
+    name: "Militia War Room",
+    short_name: "Militia",
+    description: "Get drafted, climb the ranks and secure your Militia allowlist spot.",
     start_url: "/",
     display: "standalone",
     background_color: "#050704",

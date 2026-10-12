@@ -32,7 +32,7 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
 
   g.fillStyle = "#8b927f";
   g.font = `14px ${pixel}`;
-  g.fillText("SWOLEDIERS // SERVICE RECORD", x, 64);
+  g.fillText("MILITIA // SERVICE RECORD", x, 64);
 
   g.fillStyle = "#ebe8da";
   g.font = `bold 72px ${pixel}`;
