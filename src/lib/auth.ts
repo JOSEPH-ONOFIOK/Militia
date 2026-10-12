@@ -5,11 +5,12 @@ import { cookies } from "next/headers";
 export const X_CLIENT_ID = process.env.X_CLIENT_ID;
 const X_CLIENT_SECRET = process.env.X_CLIENT_SECRET;
 const SECRET = process.env.SESSION_SECRET || (process.env.NODE_ENV === "production" ? "" : "dev-only-secret");
+export const hasSecret = !!SECRET;
 const TURNSTILE_SECRET = process.env.TURNSTILE_SECRET_KEY;
 
-export type AuthMode = "x" | "dev" | "off";
-export const authMode: AuthMode =
-  X_CLIENT_ID && SECRET ? "x" : process.env.NODE_ENV !== "production" ? "dev" : "off";
+// "x": Sign in with X (set X_CLIENT_ID + SESSION_SECRET). "handle": temporary mode where recruits type their handle.
+export type AuthMode = "x" | "handle";
+export const authMode: AuthMode = X_CLIENT_ID && SECRET ? "x" : "handle";
 
 export const SESSION_COOKIE = "swole_session";
 export const OAUTH_COOKIE = "swole_oauth";

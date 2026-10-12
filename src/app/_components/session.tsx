@@ -3,14 +3,14 @@
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
 import type { PublicRecruit } from "@/lib/game";
 
-export type AuthInfo = { mode: "x" | "dev" | "off"; turnstileSiteKey: string | null };
+export type AuthInfo = { mode: "x" | "handle"; turnstileSiteKey: string | null };
 
 type Ctx = {
   recruit: PublicRecruit | null;
   auth: AuthInfo | null;
   ready: boolean;
   signIn: (turnstileToken?: string) => void;
-  devSignIn: (handle: string) => Promise<{ error?: string; isNew?: boolean; recruit?: PublicRecruit }>;
+  devSignIn: (handle: string, cf?: string) => Promise<{ error?: string; isNew?: boolean; recruit?: PublicRecruit }>;
   call: (path: string, body?: Record<string, unknown>) => Promise<{ error?: string }>;
   signOut: () => Promise<void>;
   toast: (msg: string) => void;
@@ -71,11 +71,11 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     location.href = `/api/auth/x/start?${q}`;
   }, []);
 
-  const devSignIn = useCallback(async (handle: string) => {
-    const res = await fetch("/api/auth/dev", {
+  const devSignIn = useCallback(async (handle: string, cf?: string) => {
+    const res = await fetch("/api/auth/handle", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ handle, ref: loadRef() }),
+      body: JSON.stringify({ handle, ref: loadRef(), cf }),
     });
     const d = await res.json();
     if (!res.ok) return { error: d.error as string };

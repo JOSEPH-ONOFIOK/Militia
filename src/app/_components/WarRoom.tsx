@@ -201,7 +201,7 @@ export default function WarRoom() {
         ["YOU DON'T PICK YOUR SOLDIER. THE DRAFT DOES.", "ink"],
         ["ONE HANDLE. ONE SOLDIER. NO REROLLS.", "ink"],
         ["", "dim"],
-        ["IDENTIFY YOURSELF, RECRUIT. SIGN IN WITH X TO BEGIN.", "green"],
+        [auth?.mode === "handle" ? "IDENTIFY YOURSELF, RECRUIT. ENTER YOUR X HANDLE TO BEGIN." : "IDENTIFY YOURSELF, RECRUIT. SIGN IN WITH X TO BEGIN.", "green"],
       );
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -244,7 +244,7 @@ export default function WarRoom() {
   }
 
   function startSignIn() {
-    if (auth?.mode === "off") return print(["SIGN IN OPENS SOON. FOLLOW @" + X_HANDLE.toUpperCase() + " FOR THE LAUNCH.", "amber"]);
+    if (auth?.mode === "handle") return print(["ENTER YOUR X HANDLE IN THE BOX ABOVE TO GET DRAFTED.", "amber"]);
     if (auth?.turnstileSiteKey && !cfToken) return print(["COMPLETE THE SECURITY CHECK FIRST.", "red"]);
     print(["OPENING SECURE UPLINK TO X ...", "green"]);
     signIn(cfToken ?? undefined);
@@ -256,7 +256,7 @@ export default function WarRoom() {
       err();
       return print(["INVALID HANDLE. LETTERS, NUMBERS, _ · MAX 15.", "red"]);
     }
-    const res = await devSignIn(h);
+    const res = await devSignIn(h, cfToken ?? undefined);
     if (res.error) {
       err();
       return print([`! ${res.error.toUpperCase()}`, "red"]);
@@ -373,7 +373,7 @@ export default function WarRoom() {
     histIdx.current = -1;
     print([`${recruit ? "$" : "HANDLE>"} ${text}`, "echo"]);
     if (!recruit && !/^(help|board|inspect|drill|sound|clear|login)\b/i.test(text)) {
-      if (auth?.mode === "dev") return devDraft(text);
+      if (auth?.mode === "handle") return devDraft(text);
       return print(["SIGN IN WITH X TO GET DRAFTED. TYPE 'login' OR USE THE BUTTON.", "amber"]);
     }
     const [cmd, ...rest] = text.split(/\s+/);
@@ -508,7 +508,7 @@ export default function WarRoom() {
       <section className="pane terminal">
         <div className="pane-head">
           <span className="ph-title"><LuTerminal aria-hidden />Terminal</span>
-          <span className="ph-sub">{me ? "Type or tap a command" : "Sign in to get drafted"}</span>
+          <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to get drafted" : "Sign in to get drafted"}</span>
         </div>
         <div className="log panel-scroll" ref={logRef} aria-live="polite">
           {lines.map((l) => (
@@ -522,7 +522,7 @@ export default function WarRoom() {
             value={input}
             onChange={(e) => setInput(e.target.value)}
             onKeyDown={onKey}
-            placeholder={me ? "Type a command, or 'help'" : auth?.mode === "dev" ? "Your X handle" : "Type 'login' or 'help'"}
+            placeholder={me ? "Type a command, or 'help'" : auth?.mode === "handle" ? "Your X handle" : "Type 'login' or 'help'"}
             autoComplete="off"
             autoCapitalize="off"
             spellCheck={false}
@@ -559,24 +559,23 @@ export default function WarRoom() {
             <form className="welcome" onSubmit={(e) => {
               e.preventDefault();
               if (busy) return;
-              if (auth?.mode === "dev") {
+              if (auth?.mode === "handle") {
                 if (handleIn.trim()) devDraft(handleIn);
               } else startSignIn();
             }}>
               <span className="eyebrow"><i className="dot" />The Draft is open</span>
               <h1>Get your soldier</h1>
-              <p>Sign in with X and the Draft assigns you one of {SUPPLY.toLocaleString()} Swolediers. It&apos;s yours for good. No rerolls.</p>
-              {auth?.mode === "dev" ? (
+              <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} and the Draft assigns you one of {SUPPLY.toLocaleString()} Swolediers. It&apos;s yours for good. No rerolls.</p>
+              {auth?.mode === "handle" ? (
                 <>
                   <label className="field">
                     <span className="field-pre">@</span>
                     <input value={handleIn} onChange={(e) => setHandleIn(e.target.value)} placeholder="yourhandle" autoComplete="off" autoCapitalize="off" spellCheck={false} aria-label="Your X handle" maxLength={16} />
                   </label>
-                  <button className="btn btn-primary btn-lg" disabled={busy || !handleIn.trim()}>Draft me <LuArrowRight aria-hidden /></button>
-                  <p className="fine">Developer mode. X sign in is not configured, so any handle works locally.</p>
+                  {auth.turnstileSiteKey && <Turnstile siteKey={auth.turnstileSiteKey} onToken={setCfToken} />}
+                  <button className="btn btn-primary btn-lg" disabled={busy || !handleIn.trim() || (!!auth.turnstileSiteKey && !cfToken)}>Draft me <LuArrowRight aria-hidden /></button>
+                  <p className="fine"><LuLock aria-hidden /> Use your real X handle. Your soldier is tied to it.</p>
                 </>
-              ) : auth?.mode === "off" ? (
-                <p className="fine">Sign in opens soon. Follow <a href={X_PROFILE} target="_blank" rel="noopener">@{X_HANDLE}</a> for the launch.</p>
               ) : (
                 <>
                   {auth?.turnstileSiteKey && <Turnstile siteKey={auth.turnstileSiteKey} onToken={setCfToken} />}
@@ -686,7 +685,7 @@ export default function WarRoom() {
             <div className="stack">
               <span className="eyebrow">How it works</span>
               <ol className="how">
-                <li><span><FaXTwitter aria-hidden /></span><div><b>Sign in with X</b><p>Your handle is your enlistment.</p></div></li>
+                <li><span><FaXTwitter aria-hidden /></span><div><b>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"}</b><p>Your handle is your enlistment.</p></div></li>
                 <li><span><LuTarget aria-hidden /></span><div><b>Get drafted</b><p>The Draft assigns one of {SUPPLY.toLocaleString()} soldiers to you. No rerolls.</p></div></li>
                 <li><span><LuZap aria-hidden /></span><div><b>Earn XP</b><p>Complete tasks, play Infection Sweep and invite friends.</p></div></li>
                 <li><span><LuShieldCheck aria-hidden /></span><div><b>Secure your spot</b><p>Reach Lieutenant ({SECURED_AT.toLocaleString()} XP) to lock in the allowlist.</p></div></li>
