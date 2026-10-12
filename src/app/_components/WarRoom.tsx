@@ -32,6 +32,9 @@ const MISSION_LINK: Record<MissionId, string> = {
 
 const pad = (n: number, w = 4) => String(n).padStart(w, "0");
 
+type MView = "radar" | "tasks" | "you" | "board" | "terminal";
+const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
+
 const QUICK: Record<string, string> = {
   status: "My rank", orders: "Tasks", share: "Share card", recruit: "Invite link",
   drill: "Play sweep", card: "Download card", help: "Help", board: "Leaderboard", login: "Sign in", logout: "Sign out",
@@ -75,6 +78,12 @@ export default function WarRoom() {
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
   const sideRef = useRef<HTMLElement>(null);
   const signing = useRef(false);
+  // Phone layout: one section at a time, switched by the bottom tab bar
+  const [mview, setMview] = useState<MView>("radar");
+  const mviewRef = useRef<MView>("radar");
+  useEffect(() => {
+    mviewRef.current = mview;
+  }, [mview]);
 
   const queue = useRef<{ text: string; tone: Tone }[]>([]);
   const timer = useRef<ReturnType<typeof setInterval>>(undefined);
@@ -118,8 +127,13 @@ export default function WarRoom() {
     (...items: (string | [string, Tone])[]) => {
       for (const it of items) queue.current.push(typeof it === "string" ? { text: it, tone: "ink" } : { text: it[0], tone: it[1] });
       pump();
+      const err = items.find((it) => typeof it !== "string" && it[1] === "red") as [string, Tone] | undefined;
+      if (err && isPhone() && mviewRef.current !== "terminal") {
+        const t = err[0].replace(/^!\s*/, "").toLowerCase();
+        toast(t.charAt(0).toUpperCase() + t.slice(1));
+      }
     },
-    [pump],
+    [pump, toast],
   );
 
   useEffect(() => () => clearInterval(timer.current), []);
@@ -456,14 +470,15 @@ export default function WarRoom() {
   const exec = (c: string) => {
     if (busy) return;
     run(c);
-    inputRef.current?.focus({ preventScroll: true });
+    if (!isPhone()) inputRef.current?.focus({ preventScroll: true });
   };
 
   const onQuick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const c = e.currentTarget.dataset.cmd!;
     if (c === "wallet") {
       setInput("wallet ");
-      inputRef.current?.focus();
+      setMview("terminal");
+      setTimeout(() => inputRef.current?.focus(), 50);
     } else exec(c);
   };
 
@@ -480,8 +495,8 @@ export default function WarRoom() {
   const pctToNext = me && rank ? (rank.next ? ((me.xp - rank.min) / (rank.next.min - rank.min)) * 100 : 100) : 0;
 
   return (
-    <div className="warroom" onClick={(e) => {
-      if ((e.target as HTMLElement).closest("button,a,input,canvas,.panel-scroll")) return;
+    <div className="warroom" data-mview={mview} onClick={(e) => {
+      if (isPhone() || (e.target as HTMLElement).closest("button,a,input,canvas,.panel-scroll")) return;
       inputRef.current?.focus({ preventScroll: true });
     }}>
       {/* top bar */}
@@ -499,7 +514,7 @@ export default function WarRoom() {
           <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
         </div>
         {me && rank && (
-          <button className="xp-meter" onClick={() => { setTab("tasks"); sideRef.current?.scrollIntoView({ behavior: "smooth" }); }} title="Open your tasks">
+          <button className="xp-meter" onClick={() => { setTab("tasks"); setMview("tasks"); setCoach(false); }} title="Open your tasks">
             <LuZap className="xp-ico" aria-hidden />
             <span className="xp-num"><b key={me.xp}>{me.xp.toLocaleString()}</b> XP</span>
             <span className="xp-rank">
@@ -630,9 +645,6 @@ export default function WarRoom() {
             <LuSparkles aria-hidden />
             <span><b>Start here.</b> Complete tasks to earn XP</span>
             <LuArrowRight aria-hidden />
-          </button>
-          <button className="coach-mobile" onClick={() => { setCoach(false); sideRef.current?.scrollIntoView({ behavior: "smooth" }); }}>
-            See your tasks <LuArrowDown aria-hidden />
           </button>
         </>
       )}
@@ -782,6 +794,31 @@ export default function WarRoom() {
           ))}
         </div>
       </footer>
+
+      {/* phone tab bar */}
+      <nav className="mnav" aria-label="Sections">
+        {([
+          ["radar", "Radar", LuRadar],
+          ["tasks", "Tasks", LuListChecks],
+          ["you", "You", LuUserRound],
+          ["board", "Ranks", LuTrophy],
+          ["terminal", "Terminal", LuTerminal],
+        ] as const).map(([v, label, Icon]) => (
+          <button key={v} className={mview === v ? "on" : ""} aria-current={mview === v ? "page" : undefined}
+            onClick={() => {
+              setMview(v);
+              if (v === "tasks" || v === "you" || v === "board") setTab(v);
+              if (v === "tasks") setCoach(false);
+            }}>
+            <span className="mnav-ico">
+              <Icon aria-hidden />
+              {v === "tasks" && me && left > 0 && <span className="mnav-badge">{left}</span>}
+            </span>
+            {label}
+            {v === "tasks" && coach && mview !== "tasks" && <span className="mnav-hint">Start here <LuArrowDown aria-hidden /></span>}
+          </button>
+        ))}
+      </nav>
 
       {drill && <Drill best={me?.drillBest} onStart={drillStart} onFinish={drillDone} onClose={() => setDrill(false)} />}
     </div>

@@ -54,7 +54,7 @@ export const metadata: Metadata = {
   formatDetection: { telephone: false, email: false, address: false },
 };
 
-export const viewport: Viewport = { themeColor: "#050704", colorScheme: "dark" };
+export const viewport: Viewport = { themeColor: "#070907", colorScheme: "dark", viewportFit: "cover" };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (

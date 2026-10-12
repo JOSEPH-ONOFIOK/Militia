@@ -65,6 +65,11 @@ export default function Radar({ blips, me }: { blips: Blip[]; me?: string }) {
       const { blips, me, seen } = data.current;
       const c = size / 2;
       const R = c - 18;
+      if (R < 20) {
+        // hidden (e.g. another tab on phones): skip drawing until it has room again
+        raf = requestAnimationFrame(draw);
+        return;
+      }
       const sweep = reduce ? -Math.PI / 2 : ((t % SWEEP_MS) / SWEEP_MS) * TAU - Math.PI / 2;
 
       g.clearRect(0, 0, size, size);
