@@ -166,7 +166,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       writeLocal(db);
       const pub = toPublic(r);
       setRecruit(pub);
-      if (pub.xp > before) window.dispatchEvent(new CustomEvent("swole:xp", { detail: pub.xp - before }));
+      if (pub.xp > before) window.dispatchEvent(new CustomEvent("swole:xp", { detail: { gain: pub.xp - before, before, after: pub.xp } }));
       return {};
     }
     const res = await fetch(path, {
@@ -179,7 +179,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (d.recruit) {
       const gained = xpRef.current === null ? 0 : d.recruit.xp - xpRef.current;
       setRecruit(d.recruit);
-      if (gained > 0) window.dispatchEvent(new CustomEvent("swole:xp", { detail: gained }));
+      if (gained > 0) window.dispatchEvent(new CustomEvent("swole:xp", { detail: { gain: gained, before: xpRef.current!, after: d.recruit.xp } }));
     }
     intelChanged();
     return {};

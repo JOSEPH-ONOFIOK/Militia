@@ -8,6 +8,13 @@ import Radar, { type Blip } from "./Radar";
 import Decode from "./Decode";
 import Drill from "./Drill";
 import Turnstile from "./Turnstile";
+import ShareSheet from "./ShareSheet";
+import WalletSheet from "./WalletSheet";
+import Promotion from "./Promotion";
+import Countdown from "./Countdown";
+import Sheet from "./Sheet";
+import Dossier from "./Dossier";
+import { FACTIONS, factionOf, standings } from "@/lib/factions";
 import { beep, chord, err, setSound, soundOn } from "./sound";
 import type { IconType } from "react-icons";
 import { FaXTwitter } from "react-icons/fa6";
@@ -15,7 +22,7 @@ import {
   LuArrowDown, LuArrowRight, LuArrowUpRight, LuBell, LuBiohazard, LuCheck, LuChevronRight, LuCircleHelp, LuCrosshair,
   LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuRepeat2, LuShare2,
   LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers, LuVolume2, LuVolumeX,
-  LuWallet, LuX, LuZap,
+  LuWallet, LuX, LuZap, LuFileText, LuSwords, LuShield,
 } from "react-icons/lu";
 
 type Tone = "ink" | "dim" | "amber" | "green" | "red" | "echo" | "pink";
@@ -33,6 +40,7 @@ const MISSION_LINK: Record<MissionId, string> = {
 const pad = (n: number, w = 4) => String(n).padStart(w, "0");
 
 type MView = "radar" | "tasks" | "you" | "board" | "terminal";
+const PHONE_TABS: MView[] = ["radar", "tasks", "you", "board"];
 const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
 
 const QUICK: Record<string, string> = {
@@ -76,8 +84,18 @@ export default function WarRoom() {
   const [cfToken, setCfToken] = useState<string | null>(null);
   const [coach, setCoach] = useState(false); // "start here" pointer to the tasks panel
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
+  const [sheet, setSheet] = useState<null | "share" | "wallet">(null);
+  const [fileOf, setFileOf] = useState<Focus | null>(null); // full personnel file
+  const [promo, setPromo] = useState<{ secured: boolean; k: number } | null>(null);
+  const [notes, setNotes] = useState<{ id: number; handle: string; soldierId: number }[]>([]);
+  const seenRecent = useRef<Set<string> | null>(null);
+  const noteId = useRef(0);
   const sideRef = useRef<HTMLElement>(null);
   const signing = useRef(false);
+  const recruitRef = useRef<string | null>(null);
+  useEffect(() => {
+    recruitRef.current = recruit?.handle ?? null;
+  }, [recruit]);
   // Phone layout: one section at a time, switched by the bottom tab bar
   const [mview, setMview] = useState<MView>("radar");
   const mviewRef = useRef<MView>("radar");
@@ -154,8 +172,12 @@ export default function WarRoom() {
   useEffect(() => {
     let t: ReturnType<typeof setTimeout>;
     const on = (e: Event) => {
-      const n = (e as CustomEvent<number>).detail;
+      const { gain: n, before, after } = (e as CustomEvent<{ gain: number; before: number; after: number }>).detail;
       setGain((g) => ({ n, k: (g?.k ?? 0) + 1 }));
+      navigator.vibrate?.(20);
+      if (rankFor(after).index > rankFor(before).index) {
+        setTimeout(() => setPromo((p) => ({ secured: before < SECURED_AT && after >= SECURED_AT, k: (p?.k ?? 0) + 1 })), 900);
+      }
       setCoach(false);
       clearTimeout(t);
       t = setTimeout(() => setGain(null), 2200);
@@ -170,7 +192,22 @@ export default function WarRoom() {
   // ---------- intel feed ----------
   useEffect(() => {
     if (!auth || auth.storage === "local") return;
-    const load = () => fetch("/api/intel").then((r) => r.json()).then(setIntel).catch(() => {});
+    const load = () =>
+      fetch("/api/intel")
+        .then((r) => r.json())
+        .then((d: Intel) => {
+          setIntel(d);
+          const prev = seenRecent.current;
+          seenRecent.current = new Set(d.recent.map((r) => r.handle));
+          if (!prev) return; // first load: nothing is "new"
+          const fresh = d.recent.filter((r) => !prev.has(r.handle) && r.handle !== recruitRef.current).slice(0, 2);
+          for (const r of fresh) {
+            const id = ++noteId.current;
+            setNotes((n) => [...n.slice(-1), { id, ...r }]);
+            setTimeout(() => setNotes((n) => n.filter((x) => x.id !== id)), 5000);
+          }
+        })
+        .catch(() => {});
     load();
     const iv = setInterval(load, 15000);
     window.addEventListener("swole:intel", load);
@@ -309,14 +346,13 @@ export default function WarRoom() {
     print([`[OK] ${def.title.toUpperCase()} · +${def.xp} XP`, "green"]);
   }
 
-  async function share() {
+  function share() {
     if (!recruit) return print(["ENLIST FIRST.", "red"]);
-    const s = getSoldier(recruit.soldierId);
-    const rc = rarityClass(s.rank);
-    const url = `${location.origin}/d/${recruit.handle}`;
-    const text = `The Draft picked my soldier.\n\nMilitia #${s.id} · ${rc.label} (rank ${s.rank}/${SUPPLY}) 💪\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
-    window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
-    if (!recruit.missions.share) {
+    setSheet("share");
+  }
+
+  async function markShared() {
+    if (recruit && !recruit.missions.share) {
       const r = await call("/api/mission", { mission: "share" });
       if (!r.error) print([`[OK] DOG TAGS POSTED · +${MISSIONS.find((m) => m.id === "share")!.xp} XP`, "green"]);
     }
@@ -332,6 +368,7 @@ export default function WarRoom() {
     a.download = `militia-${s.id}-${recruit.handle}.png`;
     a.click();
     print(["DRAFT CARD EXPORTED.", "green"]);
+    if (isPhone()) toast("Card downloaded");
   }
 
   function status() {
@@ -367,7 +404,7 @@ export default function WarRoom() {
 
   async function wallet(addr: string) {
     if (!recruit) return print(["ENLIST FIRST.", "red"]);
-    if (!addr) return print(["USAGE: wallet 0xYourAddress  (EVM or Solana)", "dim"], ["NEVER PASTE A SEED PHRASE. PUBLIC ADDRESS ONLY.", "red"]);
+    if (!addr) return setSheet("wallet");
     const r = await call("/api/wallet", { wallet: addr });
     if (r.error) {
       err();
@@ -473,13 +510,36 @@ export default function WarRoom() {
     if (!isPhone()) inputRef.current?.focus({ preventScroll: true });
   };
 
+  // Swipe left/right between sections on phones
+  const touch = useRef<{ x: number; y: number; ok: boolean } | null>(null);
+  const onTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    const el = e.target as HTMLElement;
+    touch.current = { x: t.clientX, y: t.clientY, ok: isPhone() && !el.closest("input, .quick, .overlay, .mnav") };
+  };
+  const onTouchEnd = (e: React.TouchEvent) => {
+    const s0 = touch.current;
+    touch.current = null;
+    if (!s0?.ok) return;
+    const t = e.changedTouches[0];
+    const dx = t.clientX - s0.x;
+    const dy = t.clientY - s0.y;
+    if (Math.abs(dx) < 70 || Math.abs(dy) > 50) return;
+    const i = PHONE_TABS.indexOf(mview);
+    const next = PHONE_TABS[Math.min(PHONE_TABS.length - 1, Math.max(0, i + (dx < 0 ? 1 : -1)))];
+    if (next && next !== mview) goPhone(next);
+  };
+  function goPhone(v: MView) {
+    setMview(v);
+    if (v === "tasks" || v === "you" || v === "board") setTab(v);
+    if (v === "tasks") setCoach(false);
+  }
+
   const onQuick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const c = e.currentTarget.dataset.cmd!;
-    if (c === "wallet") {
-      setInput("wallet ");
-      setMview("terminal");
-      setTimeout(() => inputRef.current?.focus(), 50);
-    } else exec(c);
+    if (c === "wallet") setSheet("wallet");
+    else if (c === "file" && recruit) setFileOf({ id: recruit.soldierId, handle: recruit.handle });
+    else exec(c);
   };
 
   const me = recruit ?? null;
@@ -495,7 +555,7 @@ export default function WarRoom() {
   const pctToNext = me && rank ? (rank.next ? ((me.xp - rank.min) / (rank.next.min - rank.min)) * 100 : 100) : 0;
 
   return (
-    <div className="warroom" data-mview={mview} onClick={(e) => {
+    <div className="warroom" data-mview={mview} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={(e) => {
       if (isPhone() || (e.target as HTMLElement).closest("button,a,input,canvas,.panel-scroll")) return;
       inputRef.current?.focus({ preventScroll: true });
     }}>
@@ -513,6 +573,7 @@ export default function WarRoom() {
           <span className="live"><i className="dot" />Live</span>
           <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
         </div>
+        <span className="hide-sm"><Countdown /></span>
         {me && rank && (
           <button className="xp-meter" onClick={() => { setTab("tasks"); setMview("tasks"); setCoach(false); }} title="Open your tasks">
             <LuZap className="xp-ico" aria-hidden />
@@ -585,6 +646,15 @@ export default function WarRoom() {
         </div>
         <div className="radar-stage">
           <Radar blips={blips} me={me?.handle} />
+          {!ready && (
+            <div className="welcome sk-card" aria-hidden>
+              <div className="skel" style={{ width: 120, height: 12 }} />
+              <div className="skel" style={{ width: "70%", height: 30 }} />
+              <div className="skel" style={{ height: 40 }} />
+              <div className="skel" style={{ height: 46 }} />
+              <div className="skel" style={{ height: 46 }} />
+            </div>
+          )}
           {ready && !me && !focus && (
             <form className="welcome" onSubmit={(e) => {
               e.preventDefault();
@@ -615,6 +685,7 @@ export default function WarRoom() {
                   <p className="fine"><LuLock aria-hidden /> We only read your public profile. We never post for you.</p>
                 </>
               )}
+              <Countdown variant="block" />
               <ol className="steps">
                 <li><span><LuTarget aria-hidden /></span>Get drafted</li>
                 <li><span><LuListChecks aria-hidden /></span>Complete tasks for XP</li>
@@ -633,6 +704,10 @@ export default function WarRoom() {
                 <span className={`pill tone-${rarityClass(getSoldier(focus.id).rank).tone}`}>{rarityClass(getSoldier(focus.id).rank).label}</span>
                 <span>Rank {getSoldier(focus.id).rank} of {SUPPLY.toLocaleString()}</span>
                 {focus.handle && <span className="handle">@{focus.handle}</span>}
+              </div>
+              <div className="file-actions">
+                <span className="faction-chip" style={{ ["--fc" as string]: FACTIONS[factionOf(focus.id)].color }}><LuShield aria-hidden />{FACTIONS[factionOf(focus.id)].name}</span>
+                <button className="btn btn-sm btn-ghost" onClick={() => setFileOf(focus)}><LuFileText aria-hidden />Full file</button>
               </div>
             </div>
           )}
@@ -660,7 +735,12 @@ export default function WarRoom() {
           ))}
         </div>
         <div className="panel-scroll side-body">
-          {tab === "you" && (me && mySoldier && rank && rarity ? (
+          {!ready && (
+            <div className="stack" aria-hidden>
+              {[64, 90, 56, 56, 56].map((h, i) => <div key={i} className="skel" style={{ height: h }} />)}
+            </div>
+          )}
+          {ready && tab === "you" && (me && mySoldier && rank && rarity ? (
             <div className="stack">
               <div className="profile">
                 <button className="avatar" onClick={() => setFocus({ id: me.soldierId, handle: me.handle })} aria-label="Open your soldier's file">
@@ -673,6 +753,18 @@ export default function WarRoom() {
                   <span className={`pill tone-${rarity.tone}`}>{rarity.label} · {mySoldier.rank} of {SUPPLY.toLocaleString()}</span>
                 </div>
               </div>
+
+              <div className="profile-actions">
+                <button className="btn btn-sm btn-ghost" data-cmd="share" onClick={onQuick}><LuShare2 aria-hidden />Share card</button>
+                <button className="btn btn-sm btn-ghost" data-cmd="file" onClick={onQuick}><LuFileText aria-hidden />Full file</button>
+              </div>
+
+              <div className="faction-row" style={{ ["--fc" as string]: FACTIONS[factionOf(me.soldierId)].color }}>
+                <span className="faction-ico"><LuShield aria-hidden /></span>
+                <span><span className="eyebrow">Your faction</span><b>{FACTIONS[factionOf(me.soldierId)].name}</b></span>
+              </div>
+
+              <Countdown variant="block" />
 
               <div className="card">
                 <div className="row"><span className="muted">Rank</span><b className="rank-name">{rank.name}</b></div>
@@ -721,7 +813,7 @@ export default function WarRoom() {
             </div>
           ))}
 
-          {tab === "tasks" && (
+          {ready && tab === "tasks" && (
             <div className="stack tight">
               {me && rank && (
                 <div className="card summary">
@@ -746,8 +838,25 @@ export default function WarRoom() {
             </div>
           )}
 
-          {tab === "board" && (
+          {ready && tab === "board" && (
             <div className="stack">
+              <div className="card war">
+                <div className="row"><span className="ph-title"><LuSwords aria-hidden />Faction war</span><span className="muted small">{local ? "Goes live soon" : "Total XP"}</span></div>
+                {(() => {
+                  const st = standings(intel?.blips ?? []);
+                  const total = st.reduce((a, f) => a + f.xp, 0) || 1;
+                  return st.map((f, i) => (
+                    <div key={f.key} className="war-row" style={{ ["--fc" as string]: FACTIONS[f.key].color }}>
+                      <div className="row">
+                        <span className="war-name">{!local && i === 0 && f.xp > 0 && <LuTrophy aria-hidden />}{FACTIONS[f.key].name}{me && factionOf(me.soldierId) === f.key && <em>You</em>}</span>
+                        <span className="war-xp">{local ? "" : `${f.xp.toLocaleString()} XP · ${f.members}`}</span>
+                      </div>
+                      <div className="war-bar"><i style={{ width: `${local ? 0 : (f.xp / total) * 100}%` }} /></div>
+                    </div>
+                  ));
+                })()}
+                {local && <p className="fine">Your soldier&apos;s background decides your side. Standings appear once the shared leaderboard is live.</p>}
+              </div>
               {intel?.top.length ? (
                 <ol className="leaders">
                   {intel.top.map((r, i) => (
@@ -802,14 +911,9 @@ export default function WarRoom() {
           ["tasks", "Tasks", LuListChecks],
           ["you", "You", LuUserRound],
           ["board", "Ranks", LuTrophy],
-          ["terminal", "Terminal", LuTerminal],
         ] as const).map(([v, label, Icon]) => (
           <button key={v} className={mview === v ? "on" : ""} aria-current={mview === v ? "page" : undefined}
-            onClick={() => {
-              setMview(v);
-              if (v === "tasks" || v === "you" || v === "board") setTab(v);
-              if (v === "tasks") setCoach(false);
-            }}>
+            onClick={() => goPhone(v)}>
             <span className="mnav-ico">
               <Icon aria-hidden />
               {v === "tasks" && me && left > 0 && <span className="mnav-badge">{left}</span>}
@@ -819,6 +923,37 @@ export default function WarRoom() {
           </button>
         ))}
       </nav>
+
+      {sheet === "share" && me && <ShareSheet recruit={me} onPosted={markShared} onClose={() => setSheet(null)} toast={toast} />}
+      {sheet === "wallet" && me && (
+        <WalletSheet hasWallet={me.hasWallet} onClose={() => setSheet(null)} onSave={async (addr) => {
+          const r = await call("/api/wallet", { wallet: addr });
+          if (r.error) return r.error;
+          beep(1320, 0.08, "triangle");
+          print([`[OK] WALLET LOCKED IN: ${addr.slice(0, 6)}…${addr.slice(-4)}`, "green"]);
+          return null;
+        }} />
+      )}
+      {fileOf && (
+        <Sheet title={`Personnel file #${fileOf.id}`} icon={LuFileText} onClose={() => setFileOf(null)} wide>
+          <div className="file-sheet"><Dossier soldier={getSoldier(fileOf.id)} handle={fileOf.handle} /></div>
+        </Sheet>
+      )}
+      {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} onClose={() => setPromo(null)} />}
+      {notes.length > 0 && (
+        <div className="notes" aria-live="polite">
+          {notes.map((n) => {
+            const rc = rarityClass(getSoldier(n.soldierId).rank);
+            return (
+              <div key={n.id} className="note">
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img src={gifSrc(n.soldierId)} alt="" className="px" />
+                <span><b>@{n.handle}</b> just got drafted<small>Militia #{n.soldierId} · <em className={`tone-${rc.tone}`}>{rc.label}</em></small></span>
+              </div>
+            );
+          })}
+        </div>
+      )}
 
       {drill && <Drill best={me?.drillBest} onStart={drillStart} onFinish={drillDone} onClose={() => setDrill(false)} />}
     </div>
