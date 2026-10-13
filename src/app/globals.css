@@ -4,6 +4,7 @@
    Tokens
    ========================================================= */
 :root {
+  --btn-line: #3c4b36;
   --bg: #070907;
   --pane: #0b0e0a;
   --surface: #11160f;
@@ -94,19 +95,21 @@ svg { flex: none; }
 .btn-lg svg { width: 18px; height: 18px; }
 .btn-primary { background: var(--green); color: var(--green-ink); }
 .btn-primary:hover:not(:disabled) { background: #a5f285; }
-.btn-ghost { background: transparent; border-color: var(--line-2); color: var(--muted); }
-.btn-ghost:hover:not(:disabled) { border-color: var(--green); color: var(--ink); background: var(--green-soft); }
+.btn-ghost { background: var(--surface); border-color: var(--btn-line); color: var(--ink); }
+.btn-ghost svg { color: var(--green); }
+.btn-ghost:hover:not(:disabled) { border-color: var(--green); background: var(--green-soft); }
 .btn-x { background: #fff; color: #000; }
 .btn-x:hover:not(:disabled) { background: #e8e8e8; }
 
 .icon-btn {
   display: inline-grid; place-items: center; width: 34px; height: 34px; border-radius: var(--r-sm);
-  border: 1px solid var(--line-2); background: transparent; color: var(--muted); cursor: pointer;
+  border: 1px solid var(--btn-line); background: var(--surface); color: var(--ink); cursor: pointer;
   transition: border-color 0.15s, color 0.15s, background 0.15s;
 }
 .icon-btn svg { width: 16px; height: 16px; }
 .icon-btn:hover { color: var(--ink); border-color: var(--green); background: var(--green-soft); }
-.icon-btn.sm { width: 28px; height: 28px; border-color: transparent; }
+.icon-btn.sm { width: 28px; height: 28px; border-color: transparent; background: transparent; color: var(--muted); }
+.icon-btn.sm:hover { color: var(--ink); }
 
 .pill {
   display: inline-flex; align-items: center; gap: 6px; height: 22px; padding: 0 9px; border-radius: 999px;
@@ -117,9 +120,12 @@ svg { flex: none; }
    App layout
    ========================================================= */
 .warroom {
+  --left: minmax(340px, 30%);
+  --right: minmax(300px, 24%);
   height: 100svh;
   display: grid;
-  grid-template-columns: minmax(340px, 30%) minmax(0, 1fr) minmax(300px, 24%);
+  grid-template-columns: var(--left) minmax(0, 1fr) var(--right);
+  transition: grid-template-columns 0.3s var(--ease);
   grid-template-rows: 56px minmax(0, 1fr) 34px;
   grid-template-areas: "top top top" "term radar side" "feed feed feed";
   gap: 1px;
@@ -301,7 +307,7 @@ svg { flex: none; }
 .tabs { display: flex; gap: 4px; height: 44px; padding: 0 10px; border-bottom: 1px solid var(--line); flex: none; }
 .tabs button {
   position: relative; display: inline-flex; align-items: center; gap: 7px; padding: 0 10px;
-  background: none; border: 0; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--dim);
+  background: none; border: 0; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--muted);
   transition: color 0.15s;
 }
 .tabs button svg { width: 15px; height: 15px; }
@@ -701,6 +707,66 @@ svg { flex: none; }
 .over-stats b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
 .over-stats span { font-size: 11.5px; color: var(--muted); }
 .over-actions { display: grid; gap: 8px; width: 100%; }
+
+/* =========================================================
+   Desktop: collapsible terminal and side panel
+   ========================================================= */
+.rail { display: none; }
+.icon-btn.panel-btn {
+  margin-left: 4px; flex: none; width: 30px; height: 30px;
+  border-color: var(--btn-line); background: var(--surface); color: var(--ink);
+}
+.icon-btn.panel-btn svg { width: 16px; height: 16px; }
+.icon-btn.panel-btn:hover { border-color: var(--green); color: var(--green); background: var(--green-soft); }
+.tabs .panel-btn { margin-left: auto; align-self: center; }
+
+@media (min-width: 901px) {
+  .warroom[data-left="closed"] { --left: 56px; }
+  .warroom[data-right="closed"] { --right: 60px; }
+  .warroom[data-left="closed"] .terminal > :not(.rail),
+  .warroom[data-right="closed"] .side > :not(.rail) { display: none; }
+  .warroom[data-left="closed"] .terminal > .rail,
+  .warroom[data-right="closed"] .side > .rail { display: flex; }
+
+  .rail {
+    flex-direction: column; align-items: center; gap: 6px; width: 100%; height: 100%; padding: 0;
+    background: var(--pane); border: 0; color: var(--muted); animation: fade 0.25s both;
+  }
+  .rail-left { cursor: pointer; }
+  .rail-left:hover { background: var(--surface); color: var(--ink); }
+  .rail-top {
+    display: grid; place-items: center; width: 38px; height: 34px; margin: 5px 0 4px; flex: none;
+    border: 1px solid rgba(141, 232, 104, 0.5); border-radius: 9px; background: var(--green-soft); color: var(--green); cursor: pointer;
+    transition: background 0.15s, border-color 0.15s;
+  }
+  .rail-top svg { width: 17px; height: 17px; }
+  .rail-left:hover .rail-top, .rail-right .rail-top:hover { background: rgba(141, 232, 104, 0.2); border-color: var(--green); }
+  .rail-label {
+    position: relative; display: inline-flex; align-items: center; gap: 10px; margin-top: 10px; padding: 12px 0;
+    writing-mode: vertical-rl; transform: rotate(180deg); font-size: 13px; font-weight: 600; letter-spacing: 0.04em; color: var(--ink);
+  }
+  .rail-label svg { width: 15px; height: 15px; transform: rotate(90deg); color: var(--green); }
+  .rail-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--amber); box-shadow: 0 0 0 3px var(--amber-soft); }
+  .rail-ico {
+    position: relative; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 3px;
+    width: 50px; height: 52px; margin-top: 2px;
+    border-radius: 10px; border: 1px solid transparent; background: none; color: var(--muted); cursor: pointer;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
+  }
+  .rail-ico svg { width: 18px; height: 18px; }
+  .rail-txt { font-size: 10.5px; font-weight: 600; }
+  .rail-ico:hover { color: var(--ink); background: var(--surface); border-color: var(--btn-line); }
+  .rail-ico.on { color: var(--green); background: var(--green-soft); }
+  .rail-badge {
+    position: absolute; top: 3px; right: 5px; min-width: 17px; height: 17px; padding: 0 4px; border-radius: 99px;
+    display: grid; place-items: center; background: var(--amber); color: #1a1100; font-size: 10.5px; font-weight: 700;
+    box-shadow: 0 0 0 2px var(--pane);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .warroom { transition: none; }
+}
 
 .mnav { display: none; }
 

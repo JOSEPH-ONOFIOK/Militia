@@ -23,6 +23,7 @@ import {
   LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuRepeat2, LuShare2,
   LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers, LuVolume2, LuVolumeX,
   LuWallet, LuX, LuZap, LuFileText, LuSwords, LuShield,
+  LuPanelLeftClose, LuPanelLeftOpen, LuPanelRightClose, LuPanelRightOpen,
 } from "react-icons/lu";
 
 type Tone = "ink" | "dim" | "amber" | "green" | "red" | "echo" | "pink";
@@ -41,6 +42,7 @@ const pad = (n: number, w = 4) => String(n).padStart(w, "0");
 
 type MView = "radar" | "tasks" | "you" | "board" | "terminal";
 const PHONE_TABS: MView[] = ["radar", "tasks", "you", "board"];
+const PANELS_KEY = "militia:panels";
 const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
 
 const QUICK: Record<string, string> = {
@@ -92,6 +94,51 @@ export default function WarRoom() {
   const noteId = useRef(0);
   const sideRef = useRef<HTMLElement>(null);
   const signing = useRef(false);
+  // Desktop: terminal starts collapsed so the radar gets the room; tasks start open
+  const [leftOpen, setLeftOpen] = useState(false);
+  const [rightOpen, setRightOpen] = useState(true);
+  const [unread, setUnread] = useState(false);
+  const leftOpenRef = useRef(false);
+  useEffect(() => {
+    leftOpenRef.current = leftOpen;
+  }, [leftOpen]);
+  const restored = useRef(false);
+  useEffect(() => {
+    // restore the visitor's last layout
+    const t = setTimeout(() => {
+      try {
+        const v = JSON.parse(localStorage.getItem(PANELS_KEY) ?? "null");
+        if (v && typeof v.left === "boolean") setLeftOpen(v.left);
+        if (v && typeof v.right === "boolean") setRightOpen(v.right);
+      } catch {}
+      restored.current = true;
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
+  useEffect(() => {
+    if (!restored.current) return;
+    try {
+      localStorage.setItem(PANELS_KEY, JSON.stringify({ left: leftOpen, right: rightOpen }));
+    } catch {}
+  }, [leftOpen, rightOpen]);
+  const toggleLeft = useCallback((open?: boolean) => {
+    setLeftOpen((cur) => open ?? !cur);
+    setUnread(false);
+  }, []);
+  const toggleRight = useCallback((open?: boolean) => {
+    setRightOpen((cur) => open ?? !cur);
+  }, []);
+  // [ and ] toggle the panels, unless the visitor is typing
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const el = e.target as HTMLElement;
+      if (e.metaKey || e.ctrlKey || e.altKey || el.closest("input, textarea, [contenteditable]")) return;
+      if (e.key === "[") toggleLeft();
+      if (e.key === "]") toggleRight();
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleLeft, toggleRight]);
   const recruitRef = useRef<string | null>(null);
   useEffect(() => {
     recruitRef.current = recruit?.handle ?? null;
@@ -145,6 +192,7 @@ export default function WarRoom() {
     (...items: (string | [string, Tone])[]) => {
       for (const it of items) queue.current.push(typeof it === "string" ? { text: it, tone: "ink" } : { text: it[0], tone: it[1] });
       pump();
+      if (!leftOpenRef.current) setUnread(true);
       const err = items.find((it) => typeof it !== "string" && it[1] === "red") as [string, Tone] | undefined;
       if (err && isPhone() && mviewRef.current !== "terminal") {
         const t = err[0].replace(/^!\s*/, "").toLowerCase();
@@ -300,6 +348,7 @@ export default function WarRoom() {
 
   function pointToTasks() {
     setTab("tasks");
+    toggleRight(true);
     setCoach(true);
     print(["> START HERE: YOUR TASKS ARE OPEN ON THE RIGHT. EACH ONE EARNS XP.", "amber"]);
   }
@@ -555,7 +604,7 @@ export default function WarRoom() {
   const pctToNext = me && rank ? (rank.next ? ((me.xp - rank.min) / (rank.next.min - rank.min)) * 100 : 100) : 0;
 
   return (
-    <div className="warroom" data-mview={mview} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={(e) => {
+    <div className="warroom" data-mview={mview} data-left={leftOpen ? "open" : "closed"} data-right={rightOpen ? "open" : "closed"} onTouchStart={onTouchStart} onTouchEnd={onTouchEnd} onClick={(e) => {
       if (isPhone() || (e.target as HTMLElement).closest("button,a,input,canvas,.panel-scroll")) return;
       inputRef.current?.focus({ preventScroll: true });
     }}>
@@ -575,7 +624,7 @@ export default function WarRoom() {
         </div>
         <span className="hide-sm"><Countdown /></span>
         {me && rank && (
-          <button className="xp-meter" onClick={() => { setTab("tasks"); setMview("tasks"); setCoach(false); }} title="Open your tasks">
+          <button className="xp-meter" onClick={() => { setTab("tasks"); setMview("tasks"); setCoach(false); toggleRight(true); }} title="Open your tasks">
             <LuZap className="xp-ico" aria-hidden />
             <span className="xp-num"><b key={me.xp}>{me.xp.toLocaleString()}</b> XP</span>
             <span className="xp-rank">
@@ -597,9 +646,16 @@ export default function WarRoom() {
 
       {/* terminal */}
       <section className="pane terminal">
+        <button className="rail rail-left" onClick={() => toggleLeft(true)} aria-label="Open terminal" title="Open terminal  [">
+          <span className="rail-top"><LuPanelLeftOpen aria-hidden /></span>
+          <span className="rail-label"><LuTerminal aria-hidden />Terminal{unread && <i className="rail-dot" aria-label="New output" />}</span>
+        </button>
         <div className="pane-head">
           <span className="ph-title"><LuTerminal aria-hidden />Terminal</span>
           <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to get drafted" : "Sign in to get drafted"}</span>
+          <button className="icon-btn sm panel-btn" onClick={() => toggleLeft(false)} aria-label="Collapse terminal" title="Collapse  [">
+            <LuPanelLeftClose />
+          </button>
         </div>
         <div className="log panel-scroll" ref={logRef} aria-live="polite">
           {lines.map((l) => (
@@ -726,6 +782,16 @@ export default function WarRoom() {
 
       {/* right column */}
       <aside ref={sideRef} className={`pane side ${coach ? "spotlight" : ""}`}>
+        <div className="rail rail-right">
+          <button className="rail-top" onClick={() => toggleRight(true)} aria-label="Open panel" title="Open panel  ]"><LuPanelRightOpen aria-hidden /></button>
+          {([["you", "You", LuUserRound], ["tasks", "Tasks", LuListChecks], ["board", "Leaderboard", LuTrophy]] as const).map(([t, label, Icon]) => (
+            <button key={t} className={`rail-ico ${tab === t ? "on" : ""}`} onClick={() => { setTab(t); toggleRight(true); if (t === "tasks") setCoach(false); }} aria-label={label} title={label}>
+              <Icon aria-hidden />
+              <span className="rail-txt">{t === "board" ? "Ranks" : label}</span>
+              {t === "tasks" && me && left > 0 && <span className="rail-badge">{left}</span>}
+            </button>
+          ))}
+        </div>
         <div className="tabs" role="tablist">
           {([["you", "You", LuUserRound], ["tasks", "Tasks", LuListChecks], ["board", "Leaderboard", LuTrophy]] as const).map(([t, label, Icon]) => (
             <button key={t} role="tab" aria-selected={tab === t} className={tab === t ? "on" : ""} onClick={() => { setTab(t); if (t === "tasks") setCoach(false); }}>
@@ -733,6 +799,9 @@ export default function WarRoom() {
               {t === "tasks" && me && left > 0 && <span className="badge">{left}</span>}
             </button>
           ))}
+          <button className="icon-btn sm panel-btn" onClick={() => toggleRight(false)} aria-label="Collapse panel" title="Collapse  ]">
+            <LuPanelRightClose />
+          </button>
         </div>
         <div className="panel-scroll side-body">
           {!ready && (
