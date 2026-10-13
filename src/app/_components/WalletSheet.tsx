@@ -27,10 +27,10 @@ export default function WalletSheet({ hasWallet, onSave, onClose }: {
         {hasWallet ? (
           <p className="notice ok"><LuShieldCheck aria-hidden />A wallet is on file. Saving a new one replaces it.</p>
         ) : (
-          <p className="muted">Add the public address you want on the allowlist and earn <b className="green">+{XP.wallet} XP</b>.</p>
+          <p className="muted">Add the <b>Robinhood Chain or Ethereum</b> address you want on the allowlist and earn <b className="green">+{XP.wallet} XP</b>. Both chains use the same 0x address.</p>
         )}
         <label className="field">
-          <input value={addr} onChange={(e) => { setAddr(e.target.value); setError(null); }} placeholder="0x… or Solana address" autoComplete="off" spellCheck={false} aria-label="Wallet address" autoFocus />
+          <input value={addr} onChange={(e) => { setAddr(e.target.value); setError(null); }} placeholder="0x… Robinhood Chain or Ethereum address" autoComplete="off" spellCheck={false} aria-label="Wallet address" autoFocus />
         </label>
         {error && <p className="form-error"><LuCircleAlert aria-hidden />{error}</p>}
         <button className="btn btn-primary btn-lg" disabled={busy || !addr.trim()}>{hasWallet ? "Update wallet" : "Save wallet"}</button>

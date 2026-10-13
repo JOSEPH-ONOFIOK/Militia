@@ -35,7 +35,7 @@ function localAction(r: Recruit, path: string, body: Record<string, unknown>): s
     }
     case "/api/wallet": {
       const w = String(body.wallet ?? "").trim();
-      if (!isValidWallet(w)) return "That doesn't look like a wallet address.";
+      if (!isValidWallet(w)) return "That isn't a valid Robinhood Chain or Ethereum address. It should start with 0x followed by 40 characters.";
       r.wallet = w;
       return null;
     }

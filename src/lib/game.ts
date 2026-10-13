@@ -77,6 +77,7 @@ export function toPublic(r: Recruit): PublicRecruit {
   return { ...rest, xp: computeXp(r), hasWallet: !!wallet };
 }
 
+// Robinhood Chain and Ethereum share the same 0x address format, so one address works on both
 export function isValidWallet(w: string) {
-  return /^0x[a-fA-F0-9]{40}$/.test(w) || /^[1-9A-HJ-NP-Za-km-z]{32,44}$/.test(w);
+  return /^0x[a-fA-F0-9]{40}$/.test(w);
 }

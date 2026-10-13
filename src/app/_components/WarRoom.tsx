@@ -905,7 +905,7 @@ export default function WarRoom() {
                 <Task key={m.id} icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
               ))}
               <Task icon={LuBiohazard} title="Infection Sweep" sub={`Best ${me?.drillBest ?? 0} kills · ${XP.drillPerPoint} XP per kill`} done={!!me?.drillBest} doneLabel="Replay" reward={`Up to ${XP.drillMax}`} cta="Play" data-cmd="drill" onClick={onQuick} />
-              <Task icon={LuWallet} title="Mint wallet" sub="EVM or Solana public address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
+              <Task icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
               <Task icon={LuUsers} title="Invite friends" sub={me ? `${me.referrals} joined through your link` : "Copy your invite link"} reward={`+${XP.perReferral} each`} cta="Copy" data-cmd="recruit" onClick={onQuick} />
               {!me && <p className="muted fine">Sign in with X to unlock tasks.</p>}
             </div>
