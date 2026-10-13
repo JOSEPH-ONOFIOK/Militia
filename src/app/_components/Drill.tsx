@@ -2,10 +2,10 @@
 
 import { useCallback, useEffect, useRef, useState } from "react";
 import { FaXTwitter } from "react-icons/fa6";
-import { LuBiohazard, LuCheck, LuCrosshair, LuFlame, LuPlay, LuRotateCcw, LuTimer, LuTrophy, LuX } from "react-icons/lu";
+import { LuBiohazard, LuCheck, LuCrosshair, LuFlame, LuPlay, LuRotateCcw, LuTimer, LuTrophy, LuVolume2, LuVolumeX, LuX } from "react-icons/lu";
 import { ALL_SOLDIERS, gifSrc, isInfected } from "@/lib/swole";
 import { X_HANDLE } from "@/lib/game";
-import { beep, err } from "./sound";
+import { beep, chord, err, setSound, soundOn } from "./sound";
 
 const INFECTED = ALL_SOLDIERS.filter(isInfected).map((s) => s.id);
 const CLEAN = ALL_SOLDIERS.filter((s) => !isInfected(s)).map((s) => s.id);
@@ -42,6 +42,13 @@ export default function Drill({ best, onStart, onFinish, onClose }: { best?: num
   const [time, setTime] = useState(ROUND);
   const [stats, setStats] = useState<Stats>({ hits: 0, misses: 0, streak: 0, bestStreak: 0 });
   const [prevBest] = useState(best ?? 0);
+  const [snd, setSnd] = useState(soundOn);
+  function toggleSound() {
+    const v = !soundOn();
+    setSound(v);
+    setSnd(v);
+    if (v) chord();
+  }
   const waveTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const clock = useRef<ReturnType<typeof setInterval>>(undefined);
   const endAt = useRef(0);
@@ -135,7 +142,12 @@ export default function Drill({ best, onStart, onFinish, onClose }: { best?: num
       <div className="frame drill" role="dialog" aria-labelledby="drill-title" onClick={(e) => e.stopPropagation()}>
         <div className="frame-head">
           <span id="drill-title" className="ph-title"><LuBiohazard aria-hidden />Infection Sweep</span>
-          <button className="icon-btn sm" onClick={onClose} aria-label="Close"><LuX /></button>
+          <span className="frame-actions">
+            <button className={`icon-btn sm sound-btn ${snd ? "on" : ""}`} onClick={toggleSound} aria-pressed={snd} aria-label={snd ? "Turn sound off" : "Turn sound on"} title={snd ? "Sound on" : "Sound off"}>
+              {snd ? <LuVolume2 /> : <LuVolumeX />}
+            </button>
+            <button className="icon-btn sm" onClick={onClose} aria-label="Close"><LuX /></button>
+          </span>
         </div>
 
         {phase !== "over" && (

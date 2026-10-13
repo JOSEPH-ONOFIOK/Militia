@@ -458,6 +458,8 @@ svg { flex: none; }
 }
 @keyframes rise2 { from { opacity: 0; transform: translateY(10px); } }
 .frame-head { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
+.frame-actions { display: flex; align-items: center; gap: 4px; }
+.sound-btn.on { color: var(--green); }
 .drill-hud { display: flex; gap: 28px; padding: 14px 16px 0; }
 .drill-hud .k { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
 .drill-hud .k svg { width: 13px; height: 13px; }
@@ -833,6 +835,10 @@ svg { flex: none; }
   .hide-sm { display: none !important; }
   .brand-sub { display: none; }
   .tb-mint b { height: 24px; padding: 0 8px; font-size: 10.5px; }
+  /* signed in, the XP badge needs the room: the animated logo carries the brand */
+  .topbar.has-xp { gap: 8px; }
+  .topbar.has-xp .brand-name { display: none; }
+  .topbar .tb-actions { flex: none; }
   .xp-meter { margin-left: auto; height: 36px; padding: 0 10px; gap: 8px; }
   .xp-num b { font-size: 16px; }
   .xp-mini { width: 46px; }
@@ -898,6 +904,8 @@ svg { flex: none; }
 }
 @media (max-width: 400px) {
   .xp-rank { display: none; }
+  .xp-num { font-size: 0; } /* hide the "XP" label; the bolt icon says XP */
+  .xp-num b { font-size: 15px; margin: 0; }
   .brand-name { font-size: 13px; }
 }
 

@@ -21,7 +21,7 @@ import { FaXTwitter } from "react-icons/fa6";
 import {
   LuArrowDown, LuArrowRight, LuArrowUpRight, LuBell, LuBiohazard, LuCheck, LuChevronRight, LuCircleHelp, LuCrosshair,
   LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuRepeat2, LuShare2,
-  LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers, LuVolume2, LuVolumeX,
+  LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers,
   LuWallet, LuX, LuZap, LuFileText, LuSwords, LuShield,
   LuPanelLeftClose, LuPanelLeftOpen, LuPanelRightClose, LuPanelRightOpen,
 } from "react-icons/lu";
@@ -80,7 +80,6 @@ export default function WarRoom() {
   const [focus, setFocus] = useState<Focus | null>(null);
   const [busy, setBusy] = useState(false);
   const [drill, setDrill] = useState(false);
-  const [snd, setSnd] = useState(false);
   const [tab, setTab] = useState<"you" | "tasks" | "board">("you");
   const [handleIn, setHandleIn] = useState("");
   // Soldier faintly shown behind the radar for visitors who aren't signed in; picked once per visit
@@ -546,7 +545,7 @@ export default function WarRoom() {
   function toggleSound() {
     const v = !soundOn();
     setSound(v);
-    setSnd(v);
+    print([`SOUND ${v ? "ON" : "OFF"}.`, "dim"]);
     if (v) chord();
   }
 
@@ -615,7 +614,7 @@ export default function WarRoom() {
       inputRef.current?.focus({ preventScroll: true });
     }}>
       {/* top bar */}
-      <header className="topbar">
+      <header className={`topbar ${me ? "has-xp" : ""}`}>
         <div className="brand">
           <span className="brand-mark" aria-hidden>
             {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -642,9 +641,6 @@ export default function WarRoom() {
           </button>
         )}
         <div className="tb-actions">
-          <button className="icon-btn" onClick={toggleSound} aria-pressed={snd} aria-label={snd ? "Turn sound off" : "Turn sound on"} title={snd ? "Sound on" : "Sound off"}>
-            {snd ? <LuVolume2 /> : <LuVolumeX />}
-          </button>
           <a className="icon-btn" href={X_PROFILE} target="_blank" rel="noopener" aria-label={`@${X_HANDLE} on X`} title={`@${X_HANDLE} on X`}>
             <FaXTwitter />
           </a>
