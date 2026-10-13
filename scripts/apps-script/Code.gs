@@ -18,13 +18,14 @@
  *   POST {action:"referral", handle}
  *        -> { recruit }                              invites +1, done inside the lock
  *
- *   Any POST may carry `secret`, checked against SHARED_SECRET when that is set.
+ *   Every call except ?version must carry `secret` once SHARED_SECRET is set
+ *   in Script Properties.
  *
  * Setup is in README.md next to this file.
  */
 
 /** Bumped whenever this file changes, so `?version` shows which copy is deployed. */
-var SCRIPT_VERSION = 1;
+var SCRIPT_VERSION = 2;
 
 var SHEET_NAME = 'Recruits';
 var BOARD_NAME = 'Leaderboard';
@@ -53,11 +54,13 @@ var HEADERS = [
 ];
 
 /**
- * Optional shared secret. Leave empty to accept any caller (the URL itself is
- * unguessable). To turn it on, set a value here and the same value as
- * SHEETS_WEBHOOK_SECRET in the site's environment, then redeploy both.
+ * Shared secret, read from Script Properties so it never sits in this file
+ * (the repo is public). Set it in the Apps Script editor under
+ * Project Settings → Script Properties → SHARED_SECRET, and the same value as
+ * SHEETS_WEBHOOK_SECRET in the site's environment. When it is unset, any
+ * caller is accepted and the unguessable URL is the only lock.
  */
-var SHARED_SECRET = '';
+var SHARED_SECRET = PropertiesService.getScriptProperties().getProperty('SHARED_SECRET') || '';
 
 // --- entry points -----------------------------------------------------
 
@@ -65,7 +68,7 @@ function doGet(e) {
   try {
     var p = (e && e.parameter) || {};
 
-    if (p.version !== undefined) return json({ version: SCRIPT_VERSION });
+    if (p.version !== undefined) return json({ version: SCRIPT_VERSION, secured: !!SHARED_SECRET });
 
     // Reads can expose wallets, so they are gated by the secret too when one is set.
     if (SHARED_SECRET && p.secret !== SHARED_SECRET) return json({ error: 'unauthorised' });
@@ -289,6 +292,7 @@ function selfTest() {
   Logger.log('stale save        : ' + (stale.error || JSON.stringify(stale)));
   Logger.log('invite            : ' + JSON.stringify(invited.recruit && invited.recruit.referrals));
   Logger.log('read back invites : ' + (back.recruit && back.recruit.referrals));
+  Logger.log('shared secret     : ' + (SHARED_SECRET ? 'on' : 'OFF (set SHARED_SECRET in Script Properties)'));
 
   var ok = saved.rev === 1 && stale.error === 'conflict' && back.recruit && back.recruit.referrals === 1;
   Logger.log(ok ? 'PASS. Delete the "selftest" row before going live.' : 'FAIL. See the lines above.');

@@ -39,9 +39,8 @@ Delete the `selftest` row from the `Recruits` tab.
    `https://script.google.com/macros/s/AKfy.../exec`.
 
 "Anyone" is required because the site calls the URL from its server without
-Google credentials. The URL is unguessable. For a second lock, see
-[Shared secret](#shared-secret-recommended) below. It is recommended here,
-because this sheet holds wallets and the script can read them back.
+Google credentials. The URL is unguessable, and the
+[shared secret](#shared-secret-recommended) below adds a second lock.
 
 ## 5. Point the site at it
 
@@ -58,10 +57,20 @@ The radar, leaderboard, faction war and live notifications all go live.
 
 ## Shared secret (recommended)
 
-1. In `Code.gs`, set `SHARED_SECRET` to a long random string (for example the
-   output of `openssl rand -base64 32`).
-2. Re-deploy as a new version (see below).
-3. Set the same value as `SHEETS_WEBHOOK_SECRET` in Vercel and redeploy the site.
+This sheet holds wallets and the script can read them back, so lock it with a
+secret as well as the URL. The secret lives in Script Properties, never in
+`Code.gs`, because the repo is public.
+
+1. Generate one: `openssl rand -base64 32`.
+2. In the Apps Script editor: **Project Settings** (gear icon) → **Script
+   Properties** → **Add script property**. Property `SHARED_SECRET`, value the
+   string from step 1. **Save script properties**.
+3. In Vercel, add `SHEETS_WEBHOOK_SECRET` with the **same** value and redeploy
+   the site.
+
+No script redeploy is needed: Script Properties apply immediately. To check,
+open your web app URL with `?version` on the end. It should show
+`"secured":true`. Run `selfTest` again and it reports `shared secret : on`.
 
 ## Re-deploying after an edit
 
@@ -110,6 +119,6 @@ drop in replacement.
 | --- | --- |
 | Site still says progress is saved in your browser | `GOOGLE_SHEETS_WEBAPP_URL` not set, or set without a redeploy |
 | `Sheets web app returned 401/403` | Access isn't "Anyone", or the deployment was never authorised |
-| `Sheets web app: unauthorised` | `SHARED_SECRET` and `SHEETS_WEBHOOK_SECRET` don't match |
+| `Sheets web app: unauthorised` | `SHARED_SECRET` (Script Properties) and `SHEETS_WEBHOOK_SECRET` (Vercel) don't match, or Vercel wasn't redeployed |
 | Edits to `Code.gs` have no effect | Saved but not deployed as a new version |
 | `?version` on the URL shows an old number | Same as above |
