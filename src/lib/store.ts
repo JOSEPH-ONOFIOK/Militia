@@ -1,9 +1,12 @@
 import { readFile, writeFile, mkdir, rename } from "node:fs/promises";
 import { join } from "node:path";
-import { computeXp, type Recruit } from "./game";
+import { MISSIONS, computeXp, rankFor, type Recruit } from "./game";
+import { FACTIONS, factionOf } from "./factions";
 
-// Storage: Upstash Redis (REST) when UPSTASH_REDIS_REST_URL/TOKEN are set,
-// otherwise a JSON file in .data/ for local development.
+// Storage, first one configured wins:
+//   Upstash Redis   UPSTASH_REDIS_REST_URL + UPSTASH_REDIS_REST_TOKEN
+//   Google Sheets   GOOGLE_SHEETS_WEBAPP_URL (Apps Script web app, see scripts/apps-script)
+//   JSON file       .data/ for local development
 
 type Row = { recruit: Recruit };
 
@@ -17,6 +20,8 @@ interface Store {
   ranked(n: number): Promise<{ handle: string; xp: number }[]>;
   handleForXid(xid: string): Promise<string | null>;
   linkXid(xid: string, handle: string): Promise<void>;
+  // Adds one invite to a recruit atomically, so simultaneous sign ups all count.
+  addReferral(handle: string): Promise<void>;
   // Fixed-window rate limit. Returns true when the call is allowed.
   limit(key: string, max: number, windowSec: number): Promise<boolean>;
 }
@@ -64,6 +69,12 @@ const upstash: Store = {
     return loadMany(handles);
   },
   handleForXid: (xid) => redis<string | null>("GET", `xid:${xid}`),
+  async addReferral(handle) {
+    const row = await this.get(handle);
+    if (!row) return;
+    row.recruit.referrals += 1;
+    await this.put(row, false);
+  },
   async linkXid(xid, handle) {
     await redis("SET", `xid:${xid}`, handle);
   },
@@ -148,6 +159,11 @@ const file: Store = {
   async linkXid() {
     // the file store finds handles by scanning recruit.xid
   },
+  async addReferral(handle) {
+    await mutate((d) => {
+      if (d[handle]) d[handle].recruit.referrals += 1;
+    });
+  },
   async limit(key, max, windowSec) {
     const now = Date.now();
     const w = windows.get(key);
@@ -162,21 +178,168 @@ const file: Store = {
   },
 };
 
+// ---------- Google Sheets (Apps Script web app) ----------
+const SHEETS_URL = process.env.GOOGLE_SHEETS_WEBAPP_URL;
+const SHEETS_SECRET = process.env.SHEETS_WEBHOOK_SECRET;
+const LIST_TTL = 20_000; // the full list is cached per server instance to spare Apps Script quota
+let listCache: { at: number; recruits: Recruit[] } | null = null;
+let listLoading: Promise<Recruit[]> | null = null;
+
+async function sheetGet<T>(params: Record<string, string>): Promise<T> {
+  const url = new URL(SHEETS_URL!);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
+  if (SHEETS_SECRET) url.searchParams.set("secret", SHEETS_SECRET);
+  const res = await fetch(url, { cache: "no-store", redirect: "follow", signal: AbortSignal.timeout(15000) });
+  if (!res.ok) throw new Error(`Sheets web app returned ${res.status}`);
+  const data = await res.json();
+  if (data.error) throw new Error(`Sheets web app: ${data.error}`);
+  return data as T;
+}
+
+async function sheetPost<T>(body: Record<string, unknown>): Promise<T & { error?: string }> {
+  for (let attempt = 0; ; attempt++) {
+    const res = await fetch(SHEETS_URL!, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ...body, secret: SHEETS_SECRET }),
+      redirect: "follow",
+      signal: AbortSignal.timeout(25000),
+    });
+    if (!res.ok) throw new Error(`Sheets web app returned ${res.status}`);
+    const data = await res.json();
+    // "busy" means the script lock was held for 20s; worth a couple of retries
+    if (data.error === "busy" && attempt < 2) {
+      await new Promise((r) => setTimeout(r, 500 + attempt * 800));
+      continue;
+    }
+    return data;
+  }
+}
+
+// Human readable columns written next to the raw record
+function display(r: Recruit) {
+  const xp = computeXp(r);
+  return {
+    xp,
+    rank: rankFor(xp).name,
+    faction: FACTIONS[factionOf(r.soldierId)].name,
+    soldier: `Militia #${r.soldierId}`,
+    tasksDone: MISSIONS.filter((m) => r.missions[m.id]).length + (r.drillBest ? 1 : 0) + (r.wallet ? 1 : 0),
+  };
+}
+
+// When two saves race, keep the best of both: progress only ever moves forward.
+function merge(mine: Recruit, theirs: Recruit): Recruit {
+  const missions = { ...theirs.missions };
+  for (const [k, v] of Object.entries(mine.missions)) {
+    const key = k as keyof typeof missions;
+    missions[key] = Math.min(v as number, (missions[key] as number) ?? Infinity);
+  }
+  return {
+    ...theirs,
+    ...mine,
+    missions,
+    referrals: Math.max(mine.referrals, theirs.referrals),
+    drillBest: Math.max(mine.drillBest, theirs.drillBest),
+    wallet: mine.wallet ?? theirs.wallet,
+    xid: theirs.xid ?? mine.xid,
+    referredBy: theirs.referredBy ?? mine.referredBy,
+    createdAt: Math.min(mine.createdAt, theirs.createdAt),
+    rev: theirs.rev,
+  };
+}
+
+function cacheRecruit(r: Recruit) {
+  if (!listCache) return;
+  const i = listCache.recruits.findIndex((x) => x.handle === r.handle);
+  if (i >= 0) listCache.recruits[i] = r;
+  else listCache.recruits.push(r);
+}
+
+async function sheetList(): Promise<Recruit[]> {
+  if (listCache && Date.now() - listCache.at < LIST_TTL) return listCache.recruits;
+  listLoading ??= sheetGet<{ recruits: Recruit[] }>({ list: "1" })
+    .then((d) => {
+      listCache = { at: Date.now(), recruits: d.recruits };
+      return d.recruits;
+    })
+    .finally(() => {
+      listLoading = null;
+    });
+  return listLoading;
+}
+
+const sortedByXp = (rs: Recruit[]) => [...rs].sort((a, b) => computeXp(b) - computeXp(a));
+
+const sheets: Store = {
+  async get(handle) {
+    const d = await sheetGet<{ recruit: Recruit | null }>({ handle });
+    return d.recruit ? { recruit: d.recruit } : null;
+  },
+  async put(row) {
+    let r = row.recruit;
+    for (let attempt = 0; attempt < 4; attempt++) {
+      const d = await sheetPost<{ rev?: number; recruit?: Recruit }>({ action: "put", recruit: r, display: display(r), expectRev: r.rev ?? 0 });
+      if (d.error === "conflict" && d.recruit) {
+        r = merge(r, d.recruit);
+        continue;
+      }
+      if (d.error) throw new Error(`Sheets web app: ${d.error}`);
+      r.rev = d.rev;
+      Object.assign(row.recruit, r);
+      cacheRecruit(row.recruit);
+      return;
+    }
+    throw new Error("Could not save: too many simultaneous changes. Please try again.");
+  },
+  async top(n) {
+    return sortedByXp(await sheetList()).slice(0, n);
+  },
+  async recent(n) {
+    return [...(await sheetList())].sort((a, b) => b.createdAt - a.createdAt).slice(0, n);
+  },
+  async count() {
+    return (await sheetList()).length;
+  },
+  async all() {
+    return sortedByXp(await sheetList());
+  },
+  async ranked(n) {
+    return sortedByXp(await sheetList()).slice(0, n).map((r) => ({ handle: r.handle, xp: computeXp(r) }));
+  },
+  async handleForXid(xid) {
+    return (await sheetGet<{ handle: string | null }>({ xid })).handle;
+  },
+  async linkXid() {
+    // the X user id is stored on the recruit's row
+  },
+  async addReferral(handle) {
+    const d = await sheetPost<{ recruit?: Recruit }>({ action: "referral", handle });
+    if (d.error) throw new Error(`Sheets web app: ${d.error}`);
+    if (d.recruit) {
+      // refresh the XP and Rank columns, which the script can't compute
+      await this.put({ recruit: d.recruit }, false);
+    }
+  },
+  limit: (key, max, windowSec) => file.limit(key, max, windowSec),
+};
+
 // The file store can't work on serverless hosts (read only disk, many instances), so fail loudly there.
 const serverless = !!(process.env.VERCEL || process.env.NETLIFY || process.env.AWS_LAMBDA_FUNCTION_NAME);
-export const dbConfigured = !!(URL_ && TOKEN) || !serverless;
+const hasServerDb = !!(URL_ && TOKEN) || !!SHEETS_URL;
+export const dbConfigured = hasServerDb || !serverless;
 export class DbNotConfigured extends Error {}
 
 const unconfigured = new Proxy({} as Store, {
   get() {
-    return () => Promise.reject(new DbNotConfigured("Database not configured: add UPSTASH_REDIS_REST_URL and UPSTASH_REDIS_REST_TOKEN"));
+    return () => Promise.reject(new DbNotConfigured("Database not configured: set GOOGLE_SHEETS_WEBAPP_URL (or the Upstash variables)"));
   },
 });
 
-// "server": shared database (Upstash). "local": no database yet, each visitor's progress lives in their browser.
-export const storageMode: "server" | "local" = URL_ && TOKEN ? "server" : "local";
+// "server": shared database (Upstash or Google Sheets). "local": no database yet, each visitor's progress lives in their browser.
+export const storageMode: "server" | "local" = hasServerDb ? "server" : "local";
 
-export const store: Store = URL_ && TOKEN ? upstash : serverless ? unconfigured : file;
+export const store: Store = URL_ && TOKEN ? upstash : SHEETS_URL ? sheets : serverless ? unconfigured : file;
 
 export async function getRecruit(handle: string) {
   return (await store.get(handle))?.recruit ?? null;

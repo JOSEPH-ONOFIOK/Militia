@@ -51,6 +51,7 @@ export type Recruit = {
   drillBest: number;
   wallet?: string;
   createdAt: number;
+  rev?: number; // revision, used by the Google Sheets store to detect concurrent saves
 };
 
 export type PublicRecruit = Omit<Recruit, "wallet" | "xid"> & { xp: number; hasWallet: boolean };

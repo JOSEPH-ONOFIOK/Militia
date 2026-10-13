@@ -37,10 +37,7 @@ export async function enroll(opts: { handle: string; xid?: string; qualified: bo
     const referrer = await getRecruit(ref);
     if (referrer) {
       referredBy = ref;
-      if (opts.qualified) {
-        referrer.referrals += 1;
-        await saveRecruit(referrer);
-      }
+      if (opts.qualified) await store.addReferral(ref);
     }
   }
 
