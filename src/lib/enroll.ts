@@ -1,3 +1,4 @@
+import { after } from "next/server";
 import { getRecruit, saveRecruit, store } from "./store";
 import { REFERRAL_RULES, type Recruit } from "./game";
 import { isValidHandle, normalizeHandle, soldierIdForHandle } from "./swole";
@@ -9,7 +10,8 @@ export function qualifies(u: XUser) {
 }
 
 // Finds or creates the recruit for a signed-in account. Credits the referrer only for new, qualified accounts.
-export async function enroll(opts: { handle: string; xid?: string; qualified: boolean; ref?: string }) {
+// Pass `existing` when the caller already looked the handle up, to skip a second read.
+export async function enroll(opts: { handle: string; xid?: string; qualified: boolean; ref?: string; existing?: Recruit | null }) {
   let handle = normalizeHandle(opts.handle);
 
   // Someone who renamed on X keeps their original soldier
@@ -18,7 +20,7 @@ export async function enroll(opts: { handle: string; xid?: string; qualified: bo
     if (linked) handle = linked;
   }
 
-  const existing = await getRecruit(handle);
+  const existing = opts.existing !== undefined && !opts.xid ? opts.existing : await getRecruit(handle);
   if (existing) {
     if (opts.xid && existing.xid && existing.xid !== opts.xid) {
       throw new Error("handle_taken");
@@ -32,13 +34,19 @@ export async function enroll(opts: { handle: string; xid?: string; qualified: bo
   }
 
   const ref = normalizeHandle(opts.ref ?? "");
-  let referredBy: string | undefined;
-  if (ref && ref !== handle && isValidHandle(ref)) {
-    const referrer = await getRecruit(ref);
-    if (referrer) {
-      referredBy = ref;
-      if (opts.qualified) await store.addReferral(ref);
-    }
+  const referredBy = ref && ref !== handle && isValidHandle(ref) ? ref : undefined;
+
+  // Crediting the inviter takes extra round trips on slow stores (Google Sheets),
+  // so it runs after the new recruit has their response. A link from someone who
+  // never enlisted is simply ignored there.
+  if (referredBy && opts.qualified) {
+    after(async () => {
+      try {
+        if (await getRecruit(referredBy)) await store.addReferral(referredBy);
+      } catch (e) {
+        console.error("invite credit failed for", referredBy, e);
+      }
+    });
   }
 
   const recruit: Recruit = {

@@ -36,7 +36,7 @@ async function signIn(req: Request) {
     if (s?.h !== handle) return bad("This handle is already enlisted. Sign in from the device you enlisted on.", 409);
   }
 
-  const { recruit, isNew } = await enroll({ handle, qualified: true, ref: body.ref });
+  const { recruit, isNew } = await enroll({ handle, qualified: true, ref: body.ref, existing });
   const res = Response.json({ recruit: toPublic(recruit), isNew });
   const c = sessionCookie(recruit.handle);
   const secure = process.env.NODE_ENV === "production" ? "; Secure" : "";
