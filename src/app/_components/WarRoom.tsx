@@ -83,6 +83,12 @@ export default function WarRoom() {
   const [snd, setSnd] = useState(false);
   const [tab, setTab] = useState<"you" | "tasks" | "board">("you");
   const [handleIn, setHandleIn] = useState("");
+  // Soldier faintly shown behind the radar for visitors who aren't signed in; picked once per visit
+  const [featured, setFeatured] = useState<number | null>(null);
+  useEffect(() => {
+    const t = setTimeout(() => setFeatured(1 + Math.floor(Math.random() * SUPPLY)), 0);
+    return () => clearTimeout(t);
+  }, []);
   const [cfToken, setCfToken] = useState<string | null>(null);
   const [coach, setCoach] = useState(false); // "start here" pointer to the tasks panel
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
@@ -702,6 +708,12 @@ export default function WarRoom() {
           </span>
         </div>
         <div className="radar-stage">
+          {(me?.soldierId ?? featured) && (
+            <div className="radar-bg" aria-hidden>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img key={me?.soldierId ?? featured} src={gifSrc((me?.soldierId ?? featured)!)} alt="" className="px" />
+            </div>
+          )}
           <Radar blips={blips} me={me?.handle} />
           {!ready && (
             <div className="welcome sk-card" aria-hidden>
