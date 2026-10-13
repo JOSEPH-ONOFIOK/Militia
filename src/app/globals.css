@@ -768,6 +768,31 @@ svg { flex: none; }
   .warroom { transition: none; }
 }
 
+/* =========================================================
+   Free mint
+   ========================================================= */
+.tb-mint {
+  display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 0; white-space: nowrap;
+  font-size: 12px; color: var(--muted);
+}
+.tb-mint b {
+  display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 6px;
+  background: var(--green); color: var(--green-ink); font-family: var(--font-pixel), monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
+  box-shadow: 0 0 18px rgba(141, 232, 104, 0.35);
+}
+.free-mint {
+  justify-self: start; display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px;
+  background: var(--green); color: var(--green-ink);
+  font-family: var(--font-pixel), monospace; font-size: 17px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
+  box-shadow: 0 0 24px rgba(141, 232, 104, 0.35);
+}
+.fact {
+  display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
+  border: 1px solid var(--line-2); border-radius: var(--r); font-size: 13px;
+}
+.fact b { font-weight: 600; }
+.pill.pending { color: var(--amber); background: var(--amber-soft); border-color: rgba(255, 184, 48, 0.5); }
+
 .mnav { display: none; }
 
 /* =========================================================
@@ -793,6 +818,7 @@ svg { flex: none; }
 
   .hide-sm { display: none !important; }
   .brand-sub { display: none; }
+  .tb-mint b { height: 24px; padding: 0 8px; font-size: 10.5px; }
   .xp-meter { margin-left: auto; height: 36px; padding: 0 10px; gap: 8px; }
   .xp-num b { font-size: 16px; }
   .xp-mini { width: 46px; }

@@ -1,4 +1,4 @@
-import { CATEGORIES, SUPPLY, gifSrc, rarityClass, type Soldier } from "@/lib/swole";
+import { CATEGORIES, gifSrc, rarityClass, type Soldier } from "@/lib/swole";
 
 const TONE: Record<string, string> = { mythic: "#ff4fd8", elite: "#ffd34d", veteran: "#8fd8ff", grunt: "#8b927f" };
 
@@ -50,7 +50,7 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
   g.strokeRect(x, 210, tw + 24, 34);
   g.fillText(rc.label, x + 12, 234);
   g.fillStyle = "#ebe8da";
-  g.fillText(`RANK ${s.rank}/${SUPPLY}`, x + tw + 44, 234);
+  g.fillText(`RARITY #${s.rank}`, x + tw + 44, 234);
 
   g.font = `18px ${mono}`;
   CATEGORIES.forEach((cat, i) => {
@@ -61,6 +61,9 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
     g.fillText(s.traits[cat], x + 150, y);
   });
 
+  g.fillStyle = "#8de868";
+  g.font = `bold 20px ${pixel}`;
+  g.fillText("FREE MINT", x, H - 78);
   g.fillStyle = "#8b927f";
   g.font = `14px ${mono}`;
   g.fillText(serial, x, H - 48);
@@ -72,8 +75,8 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
   g.strokeStyle = g.fillStyle = "#ff3b30";
   g.lineWidth = 4;
   g.font = `bold 30px ${pixel}`;
-  g.strokeRect(-12, -38, g.measureText("DRAFTED").width + 24, 52);
-  g.fillText("DRAFTED", 0, 0);
+  g.strokeRect(-12, -38, g.measureText("PENDING").width + 24, 52);
+  g.fillText("PENDING", 0, 0);
   g.restore();
 
   return new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png"));

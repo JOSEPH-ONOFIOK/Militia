@@ -4,14 +4,14 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { LuArrowRight } from "react-icons/lu";
 import Dossier from "../../_components/Dossier";
-import { SUPPLY, getSoldier, isValidHandle, normalizeHandle, rarityClass, soldierIdForHandle } from "@/lib/swole";
+import { getSoldier, isValidHandle, normalizeHandle, rarityClass, soldierIdForHandle } from "@/lib/swole";
 
 export async function generateMetadata({ params }: PageProps<"/d/[handle]">): Promise<Metadata> {
   const handle = normalizeHandle((await params).handle);
   if (!isValidHandle(handle)) return {};
   const s = getSoldier(soldierIdForHandle(handle));
-  const title = `@${handle} was drafted as Militia #${s.id}`;
-  const description = `${rarityClass(s.rank).label} · rank ${s.rank}/${SUPPLY}. You don't pick your soldier. The Draft does.`;
+  const title = `@${handle} joined the Militia draft`;
+  const description = `Matched with Militia #${s.id}, ${rarityClass(s.rank).label}. Draft pending. Free mint. Join the draft.`;
   return { title, description, openGraph: { title, description }, twitter: { card: "summary_large_image", title, description } };
 }
 
@@ -37,7 +37,7 @@ function Card({ raw }: { raw: string }) {
       <div>
         <div className="label">Draft notice</div>
         <h1 className="section-title" style={{ marginTop: 8 }}>
-          @{handle} got drafted.
+          @{handle} · draft pending
         </h1>
       </div>
       <Dossier soldier={soldier} handle={handle} />

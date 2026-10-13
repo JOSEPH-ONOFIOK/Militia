@@ -20,7 +20,7 @@ export default async function Image() {
       <div style={{ width: "100%", height: "100%", display: "flex", flexDirection: "column", background: "#050704", color: "#d8e6cc", fontFamily: "Silkscreen", padding: 56 }}>
         <div style={{ display: "flex", alignItems: "center", fontSize: 22, color: "#9dff6a", letterSpacing: 4 }}>
           <div style={{ width: 12, height: 12, background: "#9dff6a", marginRight: 14 }} />
-          LIVE · THE DRAFT IS OPEN
+          LIVE · THE DRAFT IS OPEN · <span style={{ color: "#070907", background: "#9dff6a", padding: "2px 10px", marginLeft: 10, fontWeight: 700 }}>FREE MINT</span>
         </div>
         <div style={{ display: "flex", flex: 1, alignItems: "center", justifyContent: "space-between" }}>
           <div style={{ display: "flex", flexDirection: "column" }}>
@@ -39,7 +39,7 @@ export default async function Image() {
           </div>
         </div>
         <div style={{ display: "flex", justifyContent: "space-between", fontSize: 20, color: "#7d9172" }}>
-          <span>4,444 SOLDIERS · ONE PER HANDLE · NO REROLLS</span>
+          <span>ONE PER HANDLE · NO REROLLS</span>
           <span style={{ color: "#9dff6a" }}>@MILITIARH</span>
         </div>
       </div>

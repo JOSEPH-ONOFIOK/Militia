@@ -1,7 +1,7 @@
 import { ImageResponse } from "next/og";
 import { readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { CATEGORIES, SUPPLY, getSoldier, isValidHandle, normalizeHandle, rarityClass, soldierIdForHandle } from "@/lib/swole";
+import { CATEGORIES, getSoldier, isValidHandle, normalizeHandle, rarityClass, soldierIdForHandle } from "@/lib/swole";
 
 export const alt = "Militia draft card";
 export const size = { width: 1200, height: 630 };
@@ -27,7 +27,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
         <img src={src} width={630} height={630} style={{ imageRendering: "pixelated" }} alt="" />
         <div style={{ width: 8, height: "100%", background: "#ffb000" }} />
         <div style={{ display: "flex", flexDirection: "column", padding: "48px 44px", flex: 1 }}>
-          <div style={{ fontSize: 20, color: "#8b927f", letterSpacing: 3 }}>MILITIA · DRAFT NOTICE</div>
+          <div style={{ fontSize: 20, color: "#8b927f", letterSpacing: 3 }}>MILITIA · DRAFT PENDING</div>
           <div style={{ display: "flex", alignItems: "baseline", marginTop: 12 }}>
             <span style={{ fontSize: 40, color: "#8b927f", marginRight: 12 }}>NO.</span>
             <span style={{ fontSize: 96, fontWeight: 700 }}>{String(s.id)}</span>
@@ -35,7 +35,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
           <div style={{ fontSize: 34, color: "#ffb000" }}>{`@${handle}`}</div>
           <div style={{ display: "flex", gap: 16, marginTop: 24, alignItems: "center" }}>
             <div style={{ border: `3px solid ${TONE[rc.tone]}`, color: TONE[rc.tone], padding: "4px 14px", fontSize: 26 }}>{rc.label}</div>
-            <div style={{ fontSize: 26 }}>{`RANK ${s.rank}/${SUPPLY}`}</div>
+            <div style={{ fontSize: 26 }}>{`RARITY #${s.rank}`}</div>
           </div>
           <div style={{ display: "flex", flexDirection: "column", marginTop: 30, gap: 8 }}>
             {CATEGORIES.map((c) => (
@@ -46,7 +46,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
             ))}
           </div>
           <div style={{ marginTop: "auto", fontSize: 20, color: "#ff3b30", border: "3px solid #ff3b30", padding: "6px 16px", alignSelf: "flex-start" }}>
-            GET DRAFTED →
+            FREE MINT · JOIN THE DRAFT →
           </div>
         </div>
       </div>

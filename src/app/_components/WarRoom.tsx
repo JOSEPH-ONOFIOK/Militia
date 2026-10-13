@@ -280,7 +280,7 @@ export default function WarRoom() {
     print(
       ["MILITIA OS v4.444 // COMMAND NETWORK", "dim"],
       ["ESTABLISHING UPLINK ............ OK", "dim"],
-      [`PERSONNEL FILES ON RECORD ...... ${SUPPLY}`, "dim"],
+      ["MINT ........................... FREE", "green"],
       ["─────────────────────────────────────", "dim"],
     );
     if (authError) {
@@ -306,7 +306,7 @@ export default function WarRoom() {
       );
     } else {
       print(
-        ["THE DRAFT IS OPEN.", "amber"],
+        ["THE DRAFT IS OPEN. SUPPLY: TBA.", "amber"],
         ["YOU DON'T PICK YOUR SOLDIER. THE DRAFT DOES.", "ink"],
         ["ONE HANDLE. ONE SOLDIER. NO REROLLS.", "ink"],
         ["", "dim"],
@@ -333,12 +333,12 @@ export default function WarRoom() {
       chord();
       print(
         ["", "dim"],
-        [`> DRAFTED: MILITIA NO. ${pad(s.id)}`, "amber"],
-        [`  CLASS ${rc.label} · RARITY RANK ${s.rank}/${SUPPLY}`, rc.tone === "mythic" ? "pink" : rc.tone === "grunt" ? "ink" : "amber"],
+        [`> DRAFT PENDING: MATCHED WITH MILITIA NO. ${pad(s.id)}`, "amber"],
+        [`  CLASS ${rc.label} · RARITY RANK #${s.rank}`, rc.tone === "mythic" ? "pink" : rc.tone === "grunt" ? "ink" : "amber"],
         ...CATEGORIES.map((c) => [`  ${c.toUpperCase().padEnd(11)}${s.traits[c].padEnd(18)}${traitPct(c, s.traits[c]).toFixed(1)}%`, "dim"] as [string, Tone]),
         [`  SERIAL ${serialFor(r.handle, s.id)}`, "dim"],
         ["", "dim"],
-        ["YOU ARE ON THE RADAR. RANK: RECRUIT · 100 XP", "green"],
+        ["YOU ARE ON THE RADAR. STATUS: RECRUIT PENDING · 100 XP", "green"],
         [`REACH LIEUTENANT (${SECURED_AT} XP) TO SECURE THE ALLOWLIST.`, "ink"],
         
       );
@@ -354,7 +354,7 @@ export default function WarRoom() {
   }
 
   function startSignIn() {
-    if (auth?.mode === "handle") return print(["ENTER YOUR X HANDLE IN THE BOX ABOVE TO GET DRAFTED.", "amber"]);
+    if (auth?.mode === "handle") return print(["ENTER YOUR X HANDLE IN THE BOX ABOVE TO JOIN THE DRAFT.", "amber"]);
     if (auth?.turnstileSiteKey && !cfToken) return print(["COMPLETE THE SECURITY CHECK FIRST.", "red"]);
     print(["OPENING SECURE UPLINK TO X ...", "green"]);
     signIn(cfToken ?? undefined);
@@ -447,7 +447,7 @@ export default function WarRoom() {
     if (!recruit) return print(["ENLIST FIRST.", "red"]);
     const link = `${location.origin}/?ref=${recruit.handle}`;
     navigator.clipboard?.writeText(link).catch(() => {});
-    print(["RECRUITMENT LINK COPIED:", "green"], [link, "amber"], [`+${XP.perReferral} XP FOR EVERY SOLDIER DRAFTED THROUGH IT.`, "dim"]);
+    print(["RECRUITMENT LINK COPIED:", "green"], [link, "amber"], [`+${XP.perReferral} XP FOR EVERY RECRUIT WHO JOINS THROUGH IT.`, "dim"]);
     toast("Recruit link copied");
   }
 
@@ -489,7 +489,7 @@ export default function WarRoom() {
     print([`${recruit ? "$" : "HANDLE>"} ${text}`, "echo"]);
     if (!recruit && !/^(help|board|inspect|drill|sound|clear|login)\b/i.test(text)) {
       if (auth?.mode === "handle") return devDraft(text);
-      return print(["SIGN IN WITH X TO GET DRAFTED. TYPE 'login' OR USE THE BUTTON.", "amber"]);
+      return print(["SIGN IN WITH X TO JOIN THE DRAFT. TYPE 'login' OR USE THE BUTTON.", "amber"]);
     }
     const [cmd, ...rest] = text.split(/\s+/);
     const arg = rest.join(" ");
@@ -505,7 +505,7 @@ export default function WarRoom() {
           ["  wallet <addr> submit mint wallet", "ink"],
           ["  card          download your draft card", "ink"],
           ["  board         chain of command", "ink"],
-          ["  inspect <no>  pull any personnel file (1–4444)", "ink"],
+          ["  inspect <no>  pull any personnel file", "ink"],
           ["  sound         toggle console audio", "ink"],
           ["  login | logout | clear", "ink"],
         );
@@ -520,9 +520,9 @@ export default function WarRoom() {
       case "sound": return toggleSound();
       case "inspect": {
         const n = parseInt(arg, 10);
-        if (!(n >= 1 && n <= SUPPLY)) return print([`USAGE: inspect <1–${SUPPLY}>`, "dim"]);
+        if (!(n >= 1 && n <= SUPPLY)) return print(["USAGE: inspect <file number>", "dim"]);
         const s = getSoldier(n);
-        print([`PULLING FILE NO. ${pad(n)} · ${rarityClass(s.rank).label} · RANK ${s.rank}/${SUPPLY}`, "green"], ...CATEGORIES.map((c) => [`  ${c.toUpperCase().padEnd(11)}${s.traits[c]}`, "dim"] as [string, Tone]));
+        print([`PULLING FILE NO. ${pad(n)} · ${rarityClass(s.rank).label} · RARITY #${s.rank}`, "green"], ...CATEGORIES.map((c) => [`  ${c.toUpperCase().padEnd(11)}${s.traits[c]}`, "dim"] as [string, Tone]));
         return setFocus({ id: n });
       }
       case "login": return recruit ? print(["ALREADY SIGNED IN.", "dim"]) : startSignIn();
@@ -618,6 +618,7 @@ export default function WarRoom() {
           <span className="brand-name">Militia</span>
           <span className="brand-sub">War Room</span>
         </div>
+        <span className="tb-mint" title="Free mint"><b>FREE MINT</b></span>
         <div className="tb-stats hide-sm" hidden={local}>
           <span className="live"><i className="dot" />Live</span>
           <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
@@ -652,7 +653,7 @@ export default function WarRoom() {
         </button>
         <div className="pane-head">
           <span className="ph-title"><LuTerminal aria-hidden />Terminal</span>
-          <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to get drafted" : "Sign in to get drafted"}</span>
+          <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to join the draft" : "Sign in to join the draft"}</span>
           <button className="icon-btn sm panel-btn" onClick={() => toggleLeft(false)} aria-label="Collapse terminal" title="Collapse  [">
             <LuPanelLeftClose />
           </button>
@@ -721,7 +722,8 @@ export default function WarRoom() {
             }}>
               <span className="eyebrow"><i className="dot" />The Draft is open</span>
               <h1>Get your soldier</h1>
-              <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} and the Draft assigns you one of {SUPPLY.toLocaleString()} Militia soldiers. It&apos;s yours for good. No rerolls.</p>
+              <span className="free-mint">Free mint</span>
+              <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} to join the draft. The Draft matches you with a Militia soldier. One per handle, no rerolls. Your spot stays pending until the mint.</p>
               {auth?.mode === "handle" ? (
                 <>
                   <label className="field">
@@ -743,7 +745,7 @@ export default function WarRoom() {
               )}
               <Countdown variant="block" />
               <ol className="steps">
-                <li><span><LuTarget aria-hidden /></span>Get drafted</li>
+                <li><span><LuTarget aria-hidden /></span>Join the draft</li>
                 <li><span><LuListChecks aria-hidden /></span>Complete tasks for XP</li>
                 <li><span><LuShieldCheck aria-hidden /></span>Reach Lieutenant to secure the allowlist</li>
               </ol>
@@ -758,7 +760,7 @@ export default function WarRoom() {
               <Decode id={focus.id} />
               <div className="file-foot">
                 <span className={`pill tone-${rarityClass(getSoldier(focus.id).rank).tone}`}>{rarityClass(getSoldier(focus.id).rank).label}</span>
-                <span>Rank {getSoldier(focus.id).rank} of {SUPPLY.toLocaleString()}</span>
+                <span>Rarity #{getSoldier(focus.id).rank}</span>
                 {focus.handle && <span className="handle">@{focus.handle}</span>}
               </div>
               <div className="file-actions">
@@ -818,8 +820,9 @@ export default function WarRoom() {
                 </button>
                 <div className="profile-id">
                   <b>@{me.handle}</b>
-                  <span className="muted">Militia #{me.soldierId}</span>
-                  <span className={`pill tone-${rarity.tone}`}>{rarity.label} · {mySoldier.rank} of {SUPPLY.toLocaleString()}</span>
+                  <span className="muted">Matched with Militia #{me.soldierId}</span>
+                  <span className="pill pending">Draft pending</span>
+                  <span className={`pill tone-${rarity.tone}`}>{rarity.label} · rarity #{mySoldier.rank}</span>
                 </div>
               </div>
 
@@ -874,10 +877,11 @@ export default function WarRoom() {
               <span className="eyebrow">How it works</span>
               <ol className="how">
                 <li><span><FaXTwitter aria-hidden /></span><div><b>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"}</b><p>Your handle is your enlistment.</p></div></li>
-                <li><span><LuTarget aria-hidden /></span><div><b>Get drafted</b><p>The Draft assigns one of {SUPPLY.toLocaleString()} soldiers to you. No rerolls.</p></div></li>
+                <li><span><LuTarget aria-hidden /></span><div><b>Join the draft</b><p>The Draft matches you with a soldier. One per handle, no rerolls. Status: recruit pending.</p></div></li>
                 <li><span><LuZap aria-hidden /></span><div><b>Earn XP</b><p>Complete tasks, play Infection Sweep and invite friends.</p></div></li>
                 <li><span><LuShieldCheck aria-hidden /></span><div><b>Secure your spot</b><p>Reach Lieutenant ({SECURED_AT.toLocaleString()} XP) to lock in the allowlist.</p></div></li>
               </ol>
+              <div className="fact"><span className="muted">Supply</span><b>TBA</b></div>
               <a className="fine-link" href="/privacy">Privacy and cookies</a>
             </div>
           ))}
@@ -961,11 +965,12 @@ export default function WarRoom() {
             <span key={dup} className="feed-set">
               {(intel?.recent.length ? intel.recent : []).map((r) => (
                 <span key={r.handle + dup}>
-                  <LuUserPlus aria-hidden />@{r.handle} drafted #{r.soldierId}
+                  <LuUserPlus aria-hidden />@{r.handle} joined · draft pending
                   <em className={`tone-${rarityClass(getSoldier(r.soldierId).rank).tone}`}>{rarityClass(getSoldier(r.soldierId).rank).label}</em>
                 </span>
               ))}
               <span><LuRadar aria-hidden />The Draft is open</span>
+              <span><LuShield aria-hidden />Supply: TBA</span>
               <span><LuTarget aria-hidden />One handle, one soldier, no rerolls</span>
               <span><LuBiohazard aria-hidden />Infection detected in the ranks</span>
             </span>
@@ -1017,7 +1022,7 @@ export default function WarRoom() {
               <div key={n.id} className="note">
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img src={gifSrc(n.soldierId)} alt="" className="px" />
-                <span><b>@{n.handle}</b> just got drafted<small>Militia #{n.soldierId} · <em className={`tone-${rc.tone}`}>{rc.label}</em></small></span>
+                <span><b>@{n.handle}</b> just joined the draft<small>Recruit pending · <em className={`tone-${rc.tone}`}>{rc.label}</em></small></span>
               </div>
             );
           })}

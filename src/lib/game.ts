@@ -24,7 +24,7 @@ export const XP = {
 };
 
 export const RANKS = [
-  { name: "RECRUIT", min: 0, perk: "Drafted. Prove yourself." },
+  { name: "RECRUIT", min: 0, perk: "Recruit pending. Prove yourself." },
   { name: "PRIVATE", min: 400, perk: "On the radar." },
   { name: "CORPORAL", min: 800, perk: "Allowlist raffle entry" },
   { name: "SERGEANT", min: 1300, perk: "Allowlist raffle ×3 entries" },

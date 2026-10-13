@@ -4,13 +4,13 @@ import { useEffect, useState } from "react";
 import { FaXTwitter } from "react-icons/fa6";
 import { LuDownload, LuLink, LuShare, LuShare2 } from "react-icons/lu";
 import { X_HANDLE, type PublicRecruit } from "@/lib/game";
-import { SUPPLY, getSoldier, rarityClass, serialFor } from "@/lib/swole";
+import { getSoldier, rarityClass, serialFor } from "@/lib/swole";
 import Sheet from "./Sheet";
 
 export function shareText(r: PublicRecruit) {
   const s = getSoldier(r.soldierId);
   const rc = rarityClass(s.rank);
-  return `The Draft picked my soldier.\n\nMilitia #${s.id} · ${rc.label} (rank ${s.rank}/${SUPPLY}) 💪\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
+  return `Joined the Militia draft. Recruit pending 🪖\n\nMatched with Militia #${s.id} · ${rc.label} (rarity #${s.rank})\nFREE MINT\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
 }
 
 // Preview the draft card, then post, download, copy or hand it to the phone's share sheet
