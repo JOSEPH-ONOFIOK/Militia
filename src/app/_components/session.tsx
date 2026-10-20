@@ -39,11 +39,6 @@ function localAction(r: Recruit, path: string, body: Record<string, unknown>): s
       r.wallet = w;
       return null;
     }
-    case "/api/drill":
-      r.drillBest = Math.max(r.drillBest, Math.max(0, Math.min(60, Math.floor(Number(body.score) || 0))));
-      return null;
-    case "/api/drill/start":
-      return null;
     default:
       return "Not available";
   }
@@ -133,7 +128,6 @@ export function SessionProvider({ children }: { children: ReactNode }) {
           referredBy: ref && ref !== h ? ref : undefined,
           referrals: 0,
           missions: {},
-          drillBest: 0,
           createdAt: Date.now(),
         };
       }

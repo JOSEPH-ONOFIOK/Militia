@@ -15,7 +15,6 @@ export const authMode: AuthMode = X_CLIENT_ID && SECRET && (process.env.UPSTASH_
 
 export const SESSION_COOKIE = "swole_session";
 export const OAUTH_COOKIE = "swole_oauth";
-export const DRILL_COOKIE = "swole_drill";
 const secure = process.env.NODE_ENV === "production";
 export const cookieBase = { httpOnly: true, secure, sameSite: "lax" as const, path: "/" };
 

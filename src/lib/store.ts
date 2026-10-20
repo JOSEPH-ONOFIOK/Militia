@@ -224,7 +224,7 @@ function display(r: Recruit) {
     rank: rankFor(xp).name,
     faction: FACTIONS[factionOf(r.soldierId)].name,
     soldier: `Militia #${r.soldierId}`,
-    tasksDone: MISSIONS.filter((m) => r.missions[m.id]).length + (r.drillBest ? 1 : 0) + (r.wallet ? 1 : 0),
+    tasksDone: MISSIONS.filter((m) => r.missions[m.id]).length + (r.wallet ? 1 : 0),
   };
 }
 
@@ -240,7 +240,6 @@ function merge(mine: Recruit, theirs: Recruit): Recruit {
     ...mine,
     missions,
     referrals: Math.max(mine.referrals, theirs.referrals),
-    drillBest: Math.max(mine.drillBest, theirs.drillBest),
     wallet: mine.wallet ?? theirs.wallet,
     xid: theirs.xid ?? mine.xid,
     referredBy: theirs.referredBy ?? mine.referredBy,

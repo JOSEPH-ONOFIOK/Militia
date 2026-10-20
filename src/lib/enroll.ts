@@ -57,7 +57,6 @@ export async function enroll(opts: { handle: string; xid?: string; qualified: bo
     referredBy,
     referrals: 0,
     missions: {},
-    drillBest: 0,
     createdAt: Date.now(),
   };
   await saveRecruit(recruit, true);

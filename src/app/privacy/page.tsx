@@ -12,7 +12,6 @@ export const metadata: Metadata = {
 const COOKIES = [
   ["swole_session", "Essential", "Keeps you signed in to the war room.", "30 days"],
   ["swole_oauth", "Essential", "Protects the Sign in with X step from tampering.", "10 minutes"],
-  ["swole_drill", "Essential", "Times your Infection Sweep run so scores can be verified.", "10 minutes"],
   ["swole_consent", "Essential", "Remembers your cookie choice.", "180 days"],
   ["Cloudflare Turnstile", "Essential", "Bot protection on sign in, set by Cloudflare.", "Session"],
   ["Analytics", "Optional", "Only used if you choose Accept all.", "Up to 12 months"],
@@ -28,7 +27,7 @@ export default function Privacy() {
       <h2>What we store</h2>
       <ul>
         <li><b>Your X account basics.</b> When you sign in with X we receive your user ID and username. We read your account age and follower count once to decide whether your invite counts, and we keep only the yes or no result.</li>
-        <li><b>Your progress.</b> Your assigned soldier, XP, completed tasks, best Infection Sweep score and how many people joined through your link.</li>
+        <li><b>Your progress.</b> Your assigned soldier, XP, completed tasks and how many people joined through your link.</li>
         <li><b>Your wallet address</b>, if you add one. It is never shown publicly.</li>
         <li><b>Your IP address</b>, briefly, to limit repeated sign in attempts. It is not stored with your profile.</li>
       </ul>

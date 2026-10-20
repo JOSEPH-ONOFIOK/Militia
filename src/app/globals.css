@@ -444,7 +444,7 @@ svg { flex: none; }
 @keyframes tick { to { transform: translateX(-50%); } }
 
 /* =========================================================
-   Overlay: Infection Sweep
+   Overlay dialogs (share, wallet, personnel file)
    ========================================================= */
 .overlay {
   position: fixed; inset: 0; z-index: 100; display: grid; place-items: center; padding: 16px;
@@ -458,56 +458,6 @@ svg { flex: none; }
 }
 @keyframes rise2 { from { opacity: 0; transform: translateY(10px); } }
 .frame-head { display: flex; align-items: center; justify-content: space-between; height: 48px; padding: 0 8px 0 16px; border-bottom: 1px solid var(--line); }
-.frame-actions { display: flex; align-items: center; gap: 4px; }
-.sound-btn.on { color: var(--green); }
-.drill-hud { display: flex; gap: 28px; padding: 14px 16px 0; }
-.drill-hud .k { display: flex; align-items: center; gap: 5px; font-size: 11.5px; color: var(--muted); }
-.drill-hud .k svg { width: 13px; height: 13px; }
-.drill-hud b { font-family: var(--font-pixel), monospace; font-size: 28px; font-weight: 400; font-variant-numeric: tabular-nums; }
-.drill-grid { position: relative; display: grid; grid-template-columns: repeat(3, 1fr); gap: 6px; margin: 14px 16px 16px; overflow: hidden; border-radius: var(--r); }
-.thermal {
-  position: absolute; left: 0; right: 0; height: 28%; z-index: 3; pointer-events: none;
-  background: linear-gradient(180deg, transparent, rgba(141, 232, 104, 0.14) 70%, rgba(141, 232, 104, 0.45) 98%, transparent);
-  animation: thermal 1.5s linear infinite;
-}
-@keyframes thermal { from { top: -28%; } to { top: 100%; } }
-.drill-cell {
-  position: relative; aspect-ratio: 1; padding: 0; overflow: hidden; cursor: crosshair; touch-action: manipulation;
-  border: 2px solid var(--line-2); border-radius: var(--r-sm); background: #000;
-}
-.drill-cell:hover { border-color: var(--muted); }
-.drill-cell img { width: 100%; height: 100%; transform: scale(1.5); transform-origin: 62% 30%; }
-.drill-cell.bad { border-color: var(--green); }
-.drill-cell.bad:not(.hit) { animation: infected 1.5s ease-in-out infinite; animation-delay: calc(var(--row, 0) * 0.45s); }
-@keyframes infected {
-  0%, 100% { box-shadow: inset 0 0 12px rgba(141, 232, 104, 0.4); }
-  40% { box-shadow: inset 0 0 30px rgba(141, 232, 104, 0.9), 0 0 14px rgba(141, 232, 104, 0.6); }
-}
-.bio {
-  position: absolute; top: 5px; left: 5px; z-index: 2; width: 18px; height: 18px; padding: 2px;
-  border-radius: 5px; background: rgba(0, 0, 0, 0.6); color: var(--green);
-}
-.mark { position: absolute; inset: 0; z-index: 2; display: grid; place-items: center; }
-.mark svg { width: 44%; height: 44%; }
-.drill-cell.hit, .drill-cell.miss { pointer-events: none; }
-.drill-cell.hit .mark { background: rgba(8, 30, 4, 0.7); color: var(--green); }
-.drill-cell.miss { border-color: var(--red); animation: shake 0.3s; }
-.drill-cell.miss .mark { background: rgba(50, 6, 4, 0.65); color: var(--red); }
-@keyframes shake { 25% { transform: translateX(-4px); } 75% { transform: translateX(4px); } }
-.drill-cell.static { pointer-events: none; }
-.drill-brief { padding: 14px 16px 18px; display: grid; gap: 16px; }
-.drill-brief > p { margin: 0; color: var(--muted); }
-.ex-row { display: flex; gap: 12px; }
-.ex { margin: 0; width: 112px; }
-.ex .drill-cell { width: 112px; }
-.ex figcaption { margin-top: 6px; font-size: 12.5px; font-weight: 600; color: var(--green); }
-.rules { list-style: none; margin: 0; padding: 0; display: grid; gap: 6px; font-size: 13px; color: var(--muted); }
-.rules li { display: flex; align-items: center; gap: 8px; }
-.rules svg { width: 15px; height: 15px; }
-.rules b { color: var(--ink); }
-.result { display: flex; align-items: center; gap: 8px; margin: 0; padding: 10px 12px; border-radius: var(--r); background: var(--green-soft); color: var(--green); }
-.result svg { width: 16px; height: 16px; }
-
 .toast {
   position: fixed; left: 50%; bottom: 48px; transform: translateX(-50%); z-index: 150;
   padding: 10px 16px; border-radius: 999px; background: var(--surface-2); border: 1px solid var(--line-2);
@@ -699,30 +649,6 @@ svg { flex: none; }
 .note small { color: var(--muted); font-size: 11.5px; }
 .note em { font-style: normal; font-weight: 600; }
 @keyframes noteIn { from { opacity: 0; transform: translateX(-12px); } }
-
-/* =========================================================
-   Infection Sweep extras
-   ========================================================= */
-.drill-hud { align-items: flex-end; }
-.combo {
-  margin-left: auto; align-self: center; padding: 4px 10px; border-radius: 99px;
-  background: var(--amber); color: #1a1100; font-weight: 700; font-size: 13px;
-  animation: comboPop 0.35s cubic-bezier(0.2, 1.6, 0.4, 1) both;
-}
-@keyframes comboPop { from { transform: scale(0.5); opacity: 0; } }
-.drill-time { height: 4px; margin: 12px 16px 0; border-radius: 99px; background: rgba(255, 255, 255, 0.06); overflow: hidden; }
-.drill-time i { display: block; height: 100%; background: var(--green); transition: width 0.25s linear; }
-.drill-over { display: grid; justify-items: center; gap: 14px; padding: 22px 16px 18px; text-align: center; }
-.drill-over .eyebrow { color: var(--green); }
-.over-score { display: flex; align-items: baseline; gap: 8px; }
-.over-score b { font-family: var(--font-pixel), monospace; font-size: 64px; line-height: 1; }
-.over-score span { color: var(--muted); }
-.over-stats { display: grid; grid-template-columns: repeat(3, 1fr); width: 100%; border: 1px solid var(--line-2); border-radius: var(--r); overflow: hidden; }
-.over-stats div { display: grid; gap: 2px; padding: 10px 6px; border-left: 1px solid var(--line); }
-.over-stats div:first-child { border-left: 0; }
-.over-stats b { font-size: 18px; font-weight: 700; font-variant-numeric: tabular-nums; }
-.over-stats span { font-size: 11.5px; color: var(--muted); }
-.over-actions { display: grid; gap: 8px; width: 100%; }
 
 /* =========================================================
    Desktop: collapsible terminal and side panel

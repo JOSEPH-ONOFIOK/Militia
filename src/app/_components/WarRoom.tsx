@@ -6,7 +6,6 @@ import { CATEGORIES, SUPPLY, getSoldier, gifSrc, isValidHandle, normalizeHandle,
 import { useSession } from "./session";
 import Radar, { type Blip } from "./Radar";
 import Decode from "./Decode";
-import Drill from "./Drill";
 import Turnstile from "./Turnstile";
 import ShareSheet from "./ShareSheet";
 import WalletSheet from "./WalletSheet";
@@ -19,7 +18,7 @@ import { beep, chord, err, setSound, soundOn } from "./sound";
 import type { IconType } from "react-icons";
 import { FaXTwitter } from "react-icons/fa6";
 import {
-  LuArrowDown, LuArrowRight, LuArrowUpRight, LuBell, LuBiohazard, LuCheck, LuChevronRight, LuCircleHelp, LuCrosshair,
+  LuArrowDown, LuArrowRight, LuArrowUpRight, LuBell, LuCheck, LuChevronRight, LuCircleHelp, LuCrosshair,
   LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuRepeat2, LuShare2,
   LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers,
   LuWallet, LuX, LuZap, LuFileText, LuSwords, LuShield,
@@ -47,17 +46,17 @@ const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-w
 
 const QUICK: Record<string, string> = {
   status: "My rank", orders: "Tasks", share: "Share card", recruit: "Invite link",
-  drill: "Play sweep", card: "Download card", help: "Help", board: "Leaderboard", login: "Sign in", logout: "Sign out",
+  card: "Download card", help: "Help", board: "Leaderboard", login: "Sign in", logout: "Sign out",
 };
 
 const QUICK_ICON: Record<string, IconType> = {
-  status: LuGauge, orders: LuListChecks, share: LuShare2, recruit: LuLink, drill: LuBiohazard,
+  status: LuGauge, orders: LuListChecks, share: LuShare2, recruit: LuLink,
   card: LuDownload, help: LuCircleHelp, board: LuTrophy, login: LuLogIn,
 };
 
 const TASK_ICON: Record<string, IconType> = {
   follow: LuUserPlus, repost: LuRepeat2, share: LuShare2, notify: LuBell,
-  drill: LuBiohazard, wallet: LuWallet, recruit: LuUsers,
+  wallet: LuWallet, recruit: LuUsers,
 };
 
 // The single most useful thing this recruit can do next
@@ -66,7 +65,6 @@ function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } 
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
   if (!r.missions.share) return { cmd: "share", title: "Post your draft card on X", xp: `+${m("share").xp}` };
   if (!r.missions.repost) return { cmd: "repost", title: "Like + repost the pinned post", xp: `+${m("repost").xp}` };
-  if (!r.drillBest) return { cmd: "drill", title: "Play Infection Sweep", xp: `up to +${XP.drillMax}` };
   if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
   if (!r.missions.notify) return { cmd: "notify", title: "Turn on post notifications", xp: `+${m("notify").xp}` };
   return { cmd: "recruit", title: "Invite friends with your link", xp: `+${XP.perReferral} each` };
@@ -79,7 +77,6 @@ export default function WarRoom() {
   const [input, setInput] = useState("");
   const [focus, setFocus] = useState<Focus | null>(null);
   const [busy, setBusy] = useState(false);
-  const [drill, setDrill] = useState(false);
   const [tab, setTab] = useState<"you" | "tasks" | "board">("you");
   const [handleIn, setHandleIn] = useState("");
   // Soldier faintly shown behind the radar for visitors who aren't signed in; picked once per visit
@@ -441,7 +438,6 @@ export default function WarRoom() {
     print(
       ["ACTIVE ORDERS", "amber"],
       ...MISSIONS.map((m) => [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone]),
-      [`  [${recruit.drillBest ? "x" : " "}] drill    +${XP.drillPerPoint}/kill Infection sweep`, "ink"],
       [`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Mint wallet`, recruit.hasWallet ? "dim" : "ink"],
       [`  [+] recruit  +${XP.perReferral}  per soldier (${recruit.referrals} so far)`, "ink"],
       ["TYPE AN ORDER'S NAME OR TAP IT IN THE ORDERS TAB.", "dim"],
@@ -473,18 +469,6 @@ export default function WarRoom() {
     print(["CHAIN OF COMMAND", "amber"], ...intel.top.map((r, i) => [`  ${pad(i + 1, 2)} @${r.handle.padEnd(16)}${String(r.xp).padStart(5)} ${rankFor(r.xp).name}`, i < 3 ? "amber" : "ink"] as [string, Tone]));
   }
 
-  async function drillStart() {
-    if (recruit) await call("/api/drill/start");
-  }
-
-  async function drillDone(score: number) {
-    if (!recruit) return print([`SWEEP: ${score} KILLS. SIGN IN TO BANK YOUR SCORE AS XP.`, "amber"]);
-    if (score > recruit.drillBest) {
-      const r = await call("/api/drill", { score });
-      if (r.error) return print([`! ${r.error.toUpperCase()}`, "red"]);
-      print([`[OK] NEW BEST SWEEP: ${score} KILLS · ${Math.min(score * XP.drillPerPoint, XP.drillMax)} XP BANKED`, "green"]);
-    } else print([`SWEEP: ${score} KILLS. BEST STAYS ${recruit.drillBest}.`, "dim"]);
-  }
 
   async function run(raw: string) {
     const text = raw.trim();
@@ -492,7 +476,7 @@ export default function WarRoom() {
     history.current.unshift(text);
     histIdx.current = -1;
     print([`${recruit ? "$" : "HANDLE>"} ${text}`, "echo"]);
-    if (!recruit && !/^(help|board|inspect|drill|sound|clear|login)\b/i.test(text)) {
+    if (!recruit && !/^(help|board|inspect|sound|clear|login)\b/i.test(text)) {
       if (auth?.mode === "handle") return devDraft(text);
       return print(["SIGN IN WITH X TO JOIN THE DRAFT. TYPE 'login' OR USE THE BUTTON.", "amber"]);
     }
@@ -505,7 +489,6 @@ export default function WarRoom() {
           ["  status        rank, XP, allowlist standing", "ink"],
           ["  orders        your task list", "ink"],
           ["  follow | repost | notify | share   run an order", "ink"],
-          ["  drill         infection sweep minigame", "ink"],
           ["  recruit       copy your recruitment link", "ink"],
           ["  wallet <addr> submit mint wallet", "ink"],
           ["  card          download your draft card", "ink"],
@@ -517,7 +500,6 @@ export default function WarRoom() {
       case "status": return status();
       case "orders": return orders();
       case "follow": case "repost": case "notify": case "share": return mission(cmd.toLowerCase() as MissionId);
-      case "drill": return setDrill(true);
       case "recruit": case "ref": return recruitLink();
       case "wallet": return wallet(arg);
       case "card": return card();
@@ -600,8 +582,8 @@ export default function WarRoom() {
   const rank = me ? rankFor(me.xp) : null;
   const blips: Blip[] = intel?.blips ?? [];
   const mySoldier = me ? getSoldier(me.soldierId) : null;
-  const doneFlags = me ? [...MISSIONS.map((m) => !!me.missions[m.id]), !!me.drillBest, me.hasWallet] : [];
-  const total = MISSIONS.length + 2;
+  const doneFlags = me ? [...MISSIONS.map((m) => !!me.missions[m.id]), me.hasWallet] : [];
+  const total = MISSIONS.length + 1;
   const done = doneFlags.filter(Boolean).length;
   const left = me ? total - done : 0;
 
@@ -682,7 +664,7 @@ export default function WarRoom() {
           <button className="btn btn-sm btn-primary" disabled={busy || !input.trim()}>Run</button>
         </form>
         <div className="quick">
-          {(me ? ["status", "orders", "share", "recruit", "drill", "card", "help"] : ["login", "help", "board", "drill"]).map((c) => {
+          {(me ? ["status", "orders", "share", "recruit", "card", "help"] : ["login", "help", "board"]).map((c) => {
             const Icon = QUICK_ICON[c];
             return (
               <button key={c} className="btn btn-sm btn-ghost" data-cmd={c} onClick={onQuick}>
@@ -875,7 +857,6 @@ export default function WarRoom() {
               <dl className="stats">
                 <div><dt><LuWallet aria-hidden />Wallet</dt><dd className={me.hasWallet ? "ok" : "warn"}>{me.hasWallet ? "On file" : "Missing"}</dd></div>
                 <div><dt><LuUsers aria-hidden />Friends invited</dt><dd>{me.referrals}</dd></div>
-                <div><dt><LuBiohazard aria-hidden />Best sweep</dt><dd>{me.drillBest} kills</dd></div>
               </dl>
 
               <button className="btn btn-sm btn-ghost signout" data-cmd="logout" onClick={onQuick}><LuLogOut aria-hidden />Sign out</button>
@@ -886,7 +867,7 @@ export default function WarRoom() {
               <ol className="how">
                 <li><span><FaXTwitter aria-hidden /></span><div><b>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"}</b><p>Your handle is your enlistment.</p></div></li>
                 <li><span><LuTarget aria-hidden /></span><div><b>Join the draft</b><p>The Draft matches you with a soldier. One per handle, no rerolls. Status: recruit pending.</p></div></li>
-                <li><span><LuZap aria-hidden /></span><div><b>Earn XP</b><p>Complete tasks, play Infection Sweep and invite friends.</p></div></li>
+                <li><span><LuZap aria-hidden /></span><div><b>Earn XP</b><p>Complete tasks and invite friends.</p></div></li>
                 <li><span><LuShieldCheck aria-hidden /></span><div><b>Secure your spot</b><p>Reach Lieutenant ({SECURED_AT.toLocaleString()} XP) to lock in the allowlist.</p></div></li>
               </ol>
               <div className="fact"><span className="muted">Supply</span><b>TBA</b></div>
@@ -912,7 +893,6 @@ export default function WarRoom() {
               {MISSIONS.map((m) => (
                 <Task key={m.id} icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
               ))}
-              <Task icon={LuBiohazard} title="Infection Sweep" sub={`Best ${me?.drillBest ?? 0} kills · ${XP.drillPerPoint} XP per kill`} done={!!me?.drillBest} doneLabel="Replay" reward={`Up to ${XP.drillMax}`} cta="Play" data-cmd="drill" onClick={onQuick} />
               <Task icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
               <Task icon={LuUsers} title="Invite friends" sub={me ? `${me.referrals} joined through your link` : "Copy your invite link"} reward={`+${XP.perReferral} each`} cta="Copy" data-cmd="recruit" onClick={onQuick} />
               {!me && <p className="muted fine">Sign in with X to unlock tasks.</p>}
@@ -980,7 +960,6 @@ export default function WarRoom() {
               <span><LuRadar aria-hidden />The Draft is open</span>
               <span><LuShield aria-hidden />Supply: TBA</span>
               <span><LuTarget aria-hidden />One handle, one soldier, no rerolls</span>
-              <span><LuBiohazard aria-hidden />Infection detected in the ranks</span>
             </span>
           ))}
         </div>
@@ -1037,7 +1016,6 @@ export default function WarRoom() {
         </div>
       )}
 
-      {drill && <Drill best={me?.drillBest} onStart={drillStart} onFinish={drillDone} onClose={() => setDrill(false)} />}
     </div>
   );
 }

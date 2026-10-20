@@ -44,10 +44,6 @@ export function rarityClass(rank: number) {
   return { label: "GRUNT", tone: "grunt" } as const;
 }
 
-export function isInfected(s: Soldier) {
-  return s.traits.Skin === "Infected" || s.traits.Eyes === "Infected";
-}
-
 export function normalizeHandle(raw: string) {
   return raw.trim().replace(/^@+/, "").toLowerCase();
 }

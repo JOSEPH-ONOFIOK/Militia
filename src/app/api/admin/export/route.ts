@@ -8,11 +8,11 @@ export async function GET(req: Request) {
     return new Response("Forbidden", { status: 403 });
   }
   const rows = await store.all();
-  const cols = ["handle", "xp", "rank", "wallet", "referrals", "referredBy", "drillBest", "missions", "soldierId", "createdAt"];
+  const cols = ["handle", "xp", "rank", "wallet", "referrals", "referredBy", "missions", "soldierId", "createdAt"];
   const esc = (v: unknown) => `"${String(v ?? "").replace(/"/g, '""')}"`;
   const lines = rows.map((r) => {
     const xp = computeXp(r);
-    return [r.handle, xp, rankFor(xp).name, r.wallet, r.referrals, r.referredBy, r.drillBest,
+    return [r.handle, xp, rankFor(xp).name, r.wallet, r.referrals, r.referredBy,
       Object.keys(r.missions).join("|"), r.soldierId, new Date(r.createdAt).toISOString()].map(esc).join(",");
   });
   return new Response([cols.join(","), ...lines].join("\n"), {

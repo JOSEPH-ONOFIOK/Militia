@@ -19,8 +19,6 @@ export const XP = {
   wallet: 100,
   perReferral: 250,
   maxReferrals: 20,
-  drillPerPoint: 10,
-  drillMax: 500,
 };
 
 export const RANKS = [
@@ -48,7 +46,6 @@ export type Recruit = {
   referredBy?: string;
   referrals: number;
   missions: Partial<Record<MissionId, number>>; // timestamp completed
-  drillBest: number;
   wallet?: string;
   createdAt: number;
   rev?: number; // revision, used by the Google Sheets store to detect concurrent saves
@@ -60,7 +57,6 @@ export function computeXp(r: Recruit) {
   let xp = XP.enlist;
   for (const m of MISSIONS) if (r.missions[m.id]) xp += m.xp;
   xp += Math.min(r.referrals, XP.maxReferrals) * XP.perReferral;
-  xp += Math.min(r.drillBest * XP.drillPerPoint, XP.drillMax);
   if (r.wallet) xp += XP.wallet;
   return xp;
 }

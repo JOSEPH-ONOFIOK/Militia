@@ -91,7 +91,8 @@ A new deployment gets a new URL. To keep the existing one:
 | Invites | People who joined through their link and counted |
 | Referred By | Who invited them |
 | Invite Counts | Whether this account was eligible to count as an invite |
-| Best Sweep, Tasks Done | Infection Sweep best score and tasks completed |
+| Best Sweep | No longer used (the game was removed); stays 0. Kept so existing sheets keep their column layout |
+| Tasks Done | Tasks completed |
 | Joined At, Updated At | Timestamps |
 | X User ID | Set when Sign in with X is on |
 | Data | Hidden. The full record the site reads back. **Do not edit it.** |
