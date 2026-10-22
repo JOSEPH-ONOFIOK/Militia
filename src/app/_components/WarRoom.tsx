@@ -62,10 +62,10 @@ const TASK_ICON: Record<string, IconType> = {
 // The single most useful thing this recruit can do next
 function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } {
   const m = (id: MissionId) => MISSIONS.find((x) => x.id === id)!;
+  if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
   if (!r.missions.share) return { cmd: "share", title: "Post your draft card on X", xp: `+${m("share").xp}` };
   if (!r.missions.repost) return { cmd: "repost", title: "Like + repost the pinned post", xp: `+${m("repost").xp}` };
-  if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
   if (!r.missions.notify) return { cmd: "notify", title: "Turn on post notifications", xp: `+${m("notify").xp}` };
   return { cmd: "recruit", title: "Invite friends with your link", xp: `+${XP.perReferral} each` };
 }
@@ -436,8 +436,8 @@ export default function WarRoom() {
     if (!recruit) return print(["ENLIST FIRST. ENTER YOUR X HANDLE.", "red"]);
     print(
       ["ACTIVE ORDERS", "amber"],
-      ...MISSIONS.map((m) => [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone]),
       [`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Mint wallet`, recruit.hasWallet ? "dim" : "ink"],
+      ...MISSIONS.map((m) => [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone]),
       [`  [+] recruit  +${XP.perReferral}  per soldier (${recruit.referrals} so far)`, "ink"],
       ["TYPE AN ORDER'S NAME OR TAP IT IN THE ORDERS TAB.", "dim"],
     );
@@ -888,10 +888,10 @@ export default function WarRoom() {
                   </div>
                 </div>
               )}
+              <Task icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
               {MISSIONS.map((m) => (
                 <Task key={m.id} icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
               ))}
-              <Task icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
               <Task icon={LuUsers} title="Invite friends" sub={me ? `${me.referrals} joined through your link` : "Copy your invite link"} reward={`+${XP.perReferral} each`} cta="Copy" data-cmd="recruit" onClick={onQuick} />
               {!me && <p className="muted fine">Sign in with X to unlock tasks.</p>}
             </div>
