@@ -307,7 +307,7 @@ export default function WarRoom() {
       );
     } else {
       print(
-        ["THE DRAFT IS OPEN. SUPPLY: TBA.", "amber"],
+        ["CLEARANCE REQUESTS ARE OPEN. SUPPLY: TBA.", "amber"],
         ["YOU DON'T PICK YOUR SOLDIER. THE DRAFT DOES.", "ink"],
         ["ONE HANDLE. ONE SOLDIER. NO REROLLS.", "ink"],
         ["", "dim"],
@@ -355,7 +355,7 @@ export default function WarRoom() {
   }
 
   function startSignIn() {
-    if (auth?.mode === "handle") return print(["ENTER YOUR X HANDLE IN THE BOX ABOVE TO JOIN THE DRAFT.", "amber"]);
+    if (auth?.mode === "handle") return print(["ENTER YOUR X HANDLE IN THE BOX ABOVE TO REQUEST CLEARANCE.", "amber"]);
     if (auth?.turnstileSiteKey && !cfToken) return print(["COMPLETE THE SECURITY CHECK FIRST.", "red"]);
     print(["OPENING SECURE UPLINK TO X ...", "green"]);
     signIn(cfToken ?? undefined);
@@ -477,7 +477,7 @@ export default function WarRoom() {
     print([`${recruit ? "$" : "HANDLE>"} ${text}`, "echo"]);
     if (!recruit && !/^(help|board|inspect|sound|clear|login)\b/i.test(text)) {
       if (auth?.mode === "handle") return devDraft(text);
-      return print(["SIGN IN WITH X TO JOIN THE DRAFT. TYPE 'login' OR USE THE BUTTON.", "amber"]);
+      return print(["SIGN IN WITH X TO REQUEST CLEARANCE. TYPE 'login' OR USE THE BUTTON.", "amber"]);
     }
     const [cmd, ...rest] = text.split(/\s+/);
     const arg = rest.join(" ");
@@ -606,7 +606,7 @@ export default function WarRoom() {
         </div>
         <div className="tb-stats hide-sm" hidden={local}>
           <span className="live"><i className="dot" />Live</span>
-          <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
+          <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> clearance requests</span>
         </div>
         <span className="hide-sm"><Countdown /></span>
         {me && rank && (
@@ -635,7 +635,7 @@ export default function WarRoom() {
         </button>
         <div className="pane-head">
           <span className="ph-title"><LuTerminal aria-hidden />Terminal</span>
-          <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to join the draft" : "Sign in to join the draft"}</span>
+          <span className="ph-sub">{me ? "Type or tap a command" : auth?.mode === "handle" ? "Enter your handle to request CLEARANCE" : "Sign in to request CLEARANCE"}</span>
           <button className="icon-btn sm panel-btn" onClick={() => toggleLeft(false)} aria-label="Collapse terminal" title="Collapse  [">
             <LuPanelLeftClose />
           </button>
@@ -676,11 +676,12 @@ export default function WarRoom() {
       {/* radar */}
       <section className="pane radar-pane">
         <div className="pane-head">
-          <span className="ph-title"><LuRadar aria-hidden />Live radar</span>
+          <span className="ph-title"><LuRadar aria-hidden /><span className="ph-text">Live radar</span></span>
           <span className="legend">
             <span className="lg-you"><LuUserRound aria-hidden />You</span>
-            <span className="lg-al"><LuShieldCheck aria-hidden />Allowlisted</span>
-            <span className="lg-rc"><LuCrosshair aria-hidden />Recruit</span>
+            <span className="lg-label">Clearance status</span>
+            <span className="lg-al"><LuShieldCheck aria-hidden />Cleared</span>
+            <span className="lg-rc"><LuCrosshair aria-hidden />Pending</span>
           </span>
         </div>
         <div className="radar-stage">
@@ -708,7 +709,7 @@ export default function WarRoom() {
                 if (handleIn.trim()) devDraft(handleIn);
               } else startSignIn();
             }}>
-              <span className="eyebrow"><i className="dot" />The Draft is open</span>
+              <span className="eyebrow"><i className="dot" />Clearance requests are open</span>
               <h1>Get your soldier</h1>
               <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} to join the draft. The Draft matches you with a Militia soldier. One per handle, no rerolls. Your spot stays pending until the mint.</p>
               {auth?.mode === "handle" ? (
@@ -954,7 +955,7 @@ export default function WarRoom() {
                   <em className={`tone-${rarityClass(getSoldier(r.soldierId).rank).tone}`}>{rarityClass(getSoldier(r.soldierId).rank).label}</em>
                 </span>
               ))}
-              <span><LuRadar aria-hidden />The Draft is open</span>
+              <span><LuRadar aria-hidden />Clearance requests are open</span>
               <span><LuShield aria-hidden />Supply: TBA</span>
               <span><LuTarget aria-hidden />One handle, one soldier, no rerolls</span>
             </span>
