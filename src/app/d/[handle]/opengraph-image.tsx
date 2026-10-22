@@ -46,7 +46,7 @@ export default async function Image({ params }: { params: Promise<{ handle: stri
             ))}
           </div>
           <div style={{ marginTop: "auto", fontSize: 20, color: "#ff3b30", border: "3px solid #ff3b30", padding: "6px 16px", alignSelf: "flex-start" }}>
-            FREE MINT · JOIN THE DRAFT →
+            JOIN THE DRAFT →
           </div>
         </div>
       </div>

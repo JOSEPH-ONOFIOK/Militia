@@ -4,7 +4,7 @@ export default function manifest(): MetadataRoute.Manifest {
   return {
     name: "Militia War Room",
     short_name: "Militia",
-    description: "Free mint. Join the draft, climb the ranks and secure your Militia allowlist spot.",
+    description: "Join the draft, climb the ranks and secure your Militia allowlist spot.",
     start_url: "/",
     display: "standalone",
     background_color: "#050704",

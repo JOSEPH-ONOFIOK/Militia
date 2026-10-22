@@ -11,7 +11,7 @@ export async function generateMetadata({ params }: PageProps<"/d/[handle]">): Pr
   if (!isValidHandle(handle)) return {};
   const s = getSoldier(soldierIdForHandle(handle));
   const title = `@${handle} joined the Militia draft`;
-  const description = `Matched with Militia #${s.id}, ${rarityClass(s.rank).label}. Draft pending. Free mint. Join the draft.`;
+  const description = `Matched with Militia #${s.id}, ${rarityClass(s.rank).label}. Draft pending. Join the draft.`;
   return { title, description, openGraph: { title, description }, twitter: { card: "summary_large_image", title, description } };
 }
 

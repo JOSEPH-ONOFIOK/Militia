@@ -61,9 +61,6 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
     g.fillText(s.traits[cat], x + 150, y);
   });
 
-  g.fillStyle = "#8de868";
-  g.font = `bold 20px ${pixel}`;
-  g.fillText("FREE MINT", x, H - 78);
   g.fillStyle = "#8b927f";
   g.font = `14px ${mono}`;
   g.fillText(serial, x, H - 48);

@@ -146,7 +146,7 @@ svg { flex: none; }
   grid-area: top; background: var(--pane); min-width: 0;
   display: flex; align-items: center; gap: 16px; padding: 0 16px;
 }
-.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; }
+.brand { display: flex; align-items: center; gap: 10px; white-space: nowrap; margin-right: auto; } /* pushes everything after it to the right */
 .brand-mark {
   display: block; width: 38px; height: 38px; border-radius: 9px; overflow: hidden; flex: none;
   border: 1px solid var(--line-2); background: #000;
@@ -154,7 +154,7 @@ svg { flex: none; }
 .brand-mark img { width: 36px; height: 36px; }
 .brand-name { font-family: var(--font-pixel), monospace; font-weight: 700; font-size: 15px; letter-spacing: 0.02em; }
 .brand-sub { font-size: 12px; color: var(--dim); padding-left: 10px; border-left: 1px solid var(--line-2); }
-.tb-stats { display: flex; align-items: center; gap: 16px; margin-left: auto; font-size: 13px; color: var(--muted); white-space: nowrap; }
+.tb-stats { display: flex; align-items: center; gap: 16px; font-size: 13px; color: var(--muted); white-space: nowrap; }
 .tb-stats b { color: var(--ink); font-weight: 600; font-variant-numeric: tabular-nums; }
 .live { display: inline-flex; align-items: center; gap: 8px; color: var(--green); font-weight: 600; }
 .tb-actions { display: flex; gap: 8px; }
@@ -711,23 +711,8 @@ svg { flex: none; }
 }
 
 /* =========================================================
-   Free mint
+   Side panel facts (e.g. Supply)
    ========================================================= */
-.tb-mint {
-  display: inline-flex; align-items: center; gap: 8px; height: 30px; padding: 0 4px 0 0; white-space: nowrap;
-  font-size: 12px; color: var(--muted);
-}
-.tb-mint b {
-  display: inline-flex; align-items: center; height: 26px; padding: 0 10px; border-radius: 6px;
-  background: var(--green); color: var(--green-ink); font-family: var(--font-pixel), monospace; font-size: 12px; font-weight: 700; letter-spacing: 0.06em;
-  box-shadow: 0 0 18px rgba(141, 232, 104, 0.35);
-}
-.free-mint {
-  justify-self: start; display: inline-flex; align-items: center; height: 34px; padding: 0 14px; border-radius: 8px;
-  background: var(--green); color: var(--green-ink);
-  font-family: var(--font-pixel), monospace; font-size: 17px; font-weight: 700; letter-spacing: 0.06em; text-transform: uppercase;
-  box-shadow: 0 0 24px rgba(141, 232, 104, 0.35);
-}
 .fact {
   display: flex; justify-content: space-between; align-items: center; padding: 10px 12px;
   border: 1px solid var(--line-2); border-radius: var(--r); font-size: 13px;
@@ -760,12 +745,11 @@ svg { flex: none; }
 
   .hide-sm { display: none !important; }
   .brand-sub { display: none; }
-  .tb-mint b { height: 24px; padding: 0 8px; font-size: 10.5px; }
   /* signed in, the XP badge needs the room: the animated logo carries the brand */
   .topbar.has-xp { gap: 8px; }
   .topbar.has-xp .brand-name { display: none; }
   .topbar .tb-actions { flex: none; }
-  .xp-meter { margin-left: auto; height: 36px; padding: 0 10px; gap: 8px; }
+  .xp-meter { height: 36px; padding: 0 10px; gap: 8px; }
   .xp-num b { font-size: 16px; }
   .xp-mini { width: 46px; }
   .tb-actions { gap: 6px; }

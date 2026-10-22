@@ -22,14 +22,14 @@ const mono = JetBrains_Mono({
 const SITE = process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
 const TITLE = "Militia War Room";
 const DESCRIPTION =
-  "Free mint. Join the Militia draft with your X handle, get matched with a pixel art soldier, complete missions, climb the ranks and secure your allowlist spot.";
+  "Join the Militia draft with your X handle, get matched with a pixel art soldier, complete missions, climb the ranks and secure your allowlist spot.";
 
 export const metadata: Metadata = {
   metadataBase: new URL(SITE),
   title: { default: TITLE, template: "%s | Militia" },
   description: DESCRIPTION,
   applicationName: "Militia",
-  keywords: ["Militia", "Militia War Room", "NFT", "allowlist", "pixel art", "free mint", "war room", "digital collectibles"],
+  keywords: ["Militia", "Militia War Room", "NFT", "allowlist", "pixel art", "war room", "digital collectibles"],
   authors: [{ name: "Militia", url: "https://x.com/militiaRH" }],
   creator: "Militia",
   publisher: "Militia",
@@ -41,7 +41,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "Militia",
     title: TITLE,
-    description: "Free mint. You don't pick your soldier. The Draft does. Report to the war room.",
+    description: "You don't pick your soldier. The Draft does. Report to the war room.",
     locale: "en_US",
   },
   twitter: {
@@ -49,7 +49,7 @@ export const metadata: Metadata = {
     site: "@militiaRH",
     creator: "@militiaRH",
     title: TITLE,
-    description: "Free mint. You don't pick your soldier. The Draft does. Report to the war room.",
+    description: "You don't pick your soldier. The Draft does. Report to the war room.",
   },
   formatDetection: { telephone: false, email: false, address: false },
 };

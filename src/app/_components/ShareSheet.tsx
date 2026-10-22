@@ -10,7 +10,7 @@ import Sheet from "./Sheet";
 export function shareText(r: PublicRecruit) {
   const s = getSoldier(r.soldierId);
   const rc = rarityClass(s.rank);
-  return `Joined the Militia draft. Recruit pending 🪖\n\nMatched with Militia #${s.id} · ${rc.label} (rarity #${s.rank})\nFREE MINT\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
+  return `Joined the Militia draft. Recruit pending 🪖\n\nMatched with Militia #${s.id} · ${rc.label} (rarity #${s.rank})\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
 }
 
 // Preview the draft card, then post, download, copy or hand it to the phone's share sheet

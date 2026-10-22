@@ -282,7 +282,6 @@ export default function WarRoom() {
     print(
       ["MILITIA OS v4.444 // COMMAND NETWORK", "dim"],
       ["ESTABLISHING UPLINK ............ OK", "dim"],
-      ["MINT ........................... FREE", "green"],
       ["─────────────────────────────────────", "dim"],
     );
     if (authError) {
@@ -605,7 +604,6 @@ export default function WarRoom() {
           <span className="brand-name">Militia</span>
           <span className="brand-sub">War Room</span>
         </div>
-        <span className="tb-mint" title="Free mint"><b>FREE MINT</b></span>
         <div className="tb-stats hide-sm" hidden={local}>
           <span className="live"><i className="dot" />Live</span>
           <span><b>{intel ? intel.count.toLocaleString() : "0"}</b> enlisted</span>
@@ -712,7 +710,6 @@ export default function WarRoom() {
             }}>
               <span className="eyebrow"><i className="dot" />The Draft is open</span>
               <h1>Get your soldier</h1>
-              <span className="free-mint">Free mint</span>
               <p>{auth?.mode === "handle" ? "Enter your X handle" : "Sign in with X"} to join the draft. The Draft matches you with a Militia soldier. One per handle, no rerolls. Your spot stays pending until the mint.</p>
               {auth?.mode === "handle" ? (
                 <>

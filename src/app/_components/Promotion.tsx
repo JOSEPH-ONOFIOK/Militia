@@ -19,8 +19,8 @@ export default function Promotion({ recruit, secured, onClose }: { recruit: Publ
 
   function share() {
     const text = secured
-      ? `Allowlist secured. I just made ${rank.name} in the @${X_HANDLE} war room 🪖\n\nFree mint. Join the draft 👇`
-      : `Promoted to ${rank.name} in the @${X_HANDLE} war room 🪖\n\nFree mint. Join the draft 👇`;
+      ? `Allowlist secured. I just made ${rank.name} in the @${X_HANDLE} war room 🪖\n\nJoin the draft 👇`
+      : `Promoted to ${rank.name} in the @${X_HANDLE} war room 🪖\n\nJoin the draft 👇`;
     const url = `${location.origin}/d/${recruit.handle}`;
     window.open(`https://x.com/intent/post?text=${encodeURIComponent(text)}&url=${encodeURIComponent(url)}`, "_blank", "noopener");
   }
