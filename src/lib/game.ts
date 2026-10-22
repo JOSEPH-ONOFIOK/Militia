@@ -2,8 +2,11 @@
 
 export const X_HANDLE = "militiaRH";
 export const X_PROFILE = `https://x.com/${X_HANDLE}`;
-// Set NEXT_PUBLIC_PINNED_POST to the status URL you want people to repost.
-export const PINNED_POST = process.env.NEXT_PUBLIC_PINNED_POST || X_PROFILE;
+// The post people are asked to like and repost, set with NEXT_PUBLIC_PINNED_POST.
+// Accepts any x.com or twitter.com post link (share links with ?s=… tracking are fine)
+// and falls back to the profile when it's empty or isn't a post link.
+const PINNED_ID = /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_PINNED_POST ?? "")?.[1];
+export const PINNED_POST = PINNED_ID ? `https://x.com/${X_HANDLE}/status/${PINNED_ID}` : X_PROFILE;
 
 export type MissionId = "follow" | "repost" | "share" | "notify";
 
