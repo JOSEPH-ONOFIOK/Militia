@@ -637,6 +637,33 @@ svg { flex: none; }
 }
 
 /* =========================================================
+   Wallet missing banner
+   ========================================================= */
+.wallet-nudge {
+  position: fixed; z-index: 130; top: 66px; left: 50%; transform: translateX(-50%);
+  width: min(560px, calc(100vw - 24px));
+  display: flex; align-items: center; gap: 14px; padding: 14px 16px;
+  background: var(--surface); border: 1px solid rgba(255, 184, 48, 0.55); border-radius: var(--r-lg);
+  box-shadow: var(--shadow), 0 0 0 4px var(--amber-soft);
+  animation: nudgeIn 0.45s var(--ease) both;
+}
+@keyframes nudgeIn { from { opacity: 0; transform: translate(-50%, -10px); } }
+.wn-ico { display: grid; place-items: center; width: 40px; height: 40px; flex: none; border-radius: 10px; background: var(--amber-soft); color: var(--amber); }
+.wn-ico svg { width: 20px; height: 20px; }
+.wn-body { flex: 1; min-width: 0; }
+.wn-body b { display: block; font-size: 14.5px; font-weight: 600; }
+.wn-body p { margin: 2px 0 0; font-size: 13px; color: var(--muted); }
+.wn-actions { display: flex; gap: 8px; flex: none; }
+.task.attention { border-color: rgba(255, 184, 48, 0.7); background: var(--amber-soft); animation: attention 1.8s ease-in-out infinite; }
+.task.attention .task-ico { background: rgba(255, 184, 48, 0.2); color: var(--amber); }
+@keyframes attention { 50% { box-shadow: 0 0 0 4px rgba(255, 184, 48, 0.15); } }
+@media (max-width: 600px) {
+  .wallet-nudge { top: 62px; flex-wrap: wrap; gap: 12px; }
+  .wn-actions { width: 100%; }
+  .wn-actions .btn { flex: 1; height: 42px; }
+}
+
+/* =========================================================
    Live "just drafted" notifications
    ========================================================= */
 .notes { position: fixed; left: 16px; bottom: 50px; z-index: 140; display: grid; gap: 8px; pointer-events: none; }

@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useRef, useState } from "react";
+import { Fragment, useCallback, useEffect, useRef, useState } from "react";
 import { MISSIONS, PINNED_POST, RANKS, SECURED_AT, X_HANDLE, X_PROFILE, XP, rankFor, type MissionId, type PublicRecruit } from "@/lib/game";
 import { CATEGORIES, SUPPLY, getSoldier, gifSrc, isValidHandle, normalizeHandle, rarityClass, serialFor, traitPct } from "@/lib/swole";
 import { useSession } from "./session";
@@ -40,6 +40,19 @@ const MISSION_LINK: Record<MissionId, string> = {
 const pad = (n: number, w = 4) => String(n).padStart(w, "0");
 
 type MView = "radar" | "tasks" | "you" | "board" | "terminal";
+// "Later" on the wallet banner hides it until the next visit
+const NUDGE_LATER_KEY = "militia:wallet-later";
+const nudgeSnoozed = () => {
+  try {
+    return sessionStorage.getItem(NUDGE_LATER_KEY) === "1";
+  } catch {
+    return false;
+  }
+};
+
+// Where the wallet task sits in the order: right after this mission
+const WALLET_AFTER: MissionId = "repost";
+
 const PHONE_TABS: MView[] = ["radar", "tasks", "you", "board"];
 const PANELS_KEY = "militia:panels";
 const isPhone = () => typeof window !== "undefined" && window.matchMedia("(max-width: 900px)").matches;
@@ -62,10 +75,10 @@ const TASK_ICON: Record<string, IconType> = {
 // The single most useful thing this recruit can do next
 function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } {
   const m = (id: MissionId) => MISSIONS.find((x) => x.id === id)!;
-  if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
-  if (!r.missions.share) return { cmd: "share", title: "Post your draft card on X", xp: `+${m("share").xp}` };
   if (!r.missions.repost) return { cmd: "repost", title: "Like + repost the pinned post", xp: `+${m("repost").xp}` };
+  if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
+  if (!r.missions.share) return { cmd: "share", title: "Post your draft card on X", xp: `+${m("share").xp}` };
   if (!r.missions.notify) return { cmd: "notify", title: "Turn on post notifications", xp: `+${m("notify").xp}` };
   return { cmd: "recruit", title: "Invite friends with your link", xp: `+${XP.perReferral} each` };
 }
@@ -87,6 +100,7 @@ export default function WarRoom() {
   }, []);
   const [cfToken, setCfToken] = useState<string | null>(null);
   const [coach, setCoach] = useState(false); // "start here" pointer to the tasks panel
+  const [walletNudge, setWalletNudge] = useState(false); // "your wallet is missing" banner
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
   const [sheet, setSheet] = useState<null | "share" | "wallet">(null);
   const [fileOf, setFileOf] = useState<Focus | null>(null); // full personnel file
@@ -299,6 +313,7 @@ export default function WarRoom() {
       reveal(recruit);
     } else if (recruit) {
       if (returning) setTimeout(pointToTasks, 1500);
+      if (!recruit.hasWallet && !nudgeSnoozed()) setTimeout(() => setWalletNudge(true), 1200);
       const r = rankFor(recruit.xp);
       print(
         [`WELCOME BACK, ${r.name} @${recruit.handle.toUpperCase()}.`, "amber"],
@@ -380,6 +395,7 @@ export default function WarRoom() {
     if (res.recruit && res.isNew) reveal(res.recruit);
     else {
       print([`WELCOME BACK, @${h.toUpperCase()}.`, "amber"]);
+      if (res.recruit && !res.recruit.hasWallet && !nudgeSnoozed()) setTimeout(() => setWalletNudge(true), 1200);
       pointToTasks();
     }
   }
@@ -436,8 +452,10 @@ export default function WarRoom() {
     if (!recruit) return print(["ENLIST FIRST. ENTER YOUR X HANDLE.", "red"]);
     print(
       ["ACTIVE ORDERS", "amber"],
-      [`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Mint wallet`, recruit.hasWallet ? "dim" : "ink"],
-      ...MISSIONS.map((m) => [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone]),
+      ...MISSIONS.flatMap((m) => [
+        [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone],
+        ...(m.id === WALLET_AFTER ? [[`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Mint wallet`, recruit.hasWallet ? "dim" : "ink"] as [string, Tone]] : []),
+      ]),
       [`  [+] recruit  +${XP.perReferral}  per soldier (${recruit.referrals} so far)`, "ink"],
       ["TYPE AN ORDER'S NAME OR TAP IT IN THE ORDERS TAB.", "dim"],
     );
@@ -888,9 +906,12 @@ export default function WarRoom() {
                   </div>
                 </div>
               )}
-              <Task icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />
               {MISSIONS.map((m) => (
-                <Task key={m.id} icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
+                <Fragment key={m.id}>
+                  <Task icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
+                  {/* the wallet comes right after like + repost */}
+                  {m.id === WALLET_AFTER && <Task highlight={!!me && !me.hasWallet} icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />}
+                </Fragment>
               ))}
               <Task icon={LuUsers} title="Invite friends" sub={me ? `${me.referrals} joined through your link` : "Copy your invite link"} reward={`+${XP.perReferral} each`} cta="Copy" data-cmd="recruit" onClick={onQuick} />
               {!me && <p className="muted fine">Sign in with X to unlock tasks.</p>}
@@ -999,6 +1020,23 @@ export default function WarRoom() {
         </Sheet>
       )}
       {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} onClose={() => setPromo(null)} />}
+      {walletNudge && me && !me.hasWallet && !sheet && (
+        <div className="wallet-nudge" role="alert">
+          <span className="wn-ico"><LuWallet aria-hidden /></span>
+          <div className="wn-body">
+            <b>Your mint wallet is missing</b>
+            <p>Add your Robinhood Chain or Ethereum address so your clearance can count toward the allowlist.</p>
+          </div>
+          <div className="wn-actions">
+            <button className="btn btn-primary" onClick={() => { setWalletNudge(false); setSheet("wallet"); }}><LuWallet aria-hidden />Add wallet</button>
+            <button className="btn btn-ghost" onClick={() => {
+              setWalletNudge(false);
+              try { sessionStorage.setItem(NUDGE_LATER_KEY, "1"); } catch {}
+            }}>Later</button>
+          </div>
+        </div>
+      )}
+
       {notes.length > 0 && (
         <div className="notes" aria-live="polite">
           {notes.map((n) => {
@@ -1018,11 +1056,11 @@ export default function WarRoom() {
   );
 }
 
-function Task({ icon: Icon, title, sub, done, doneLabel = "Done", reward, cta, ...rest }: {
-  icon: IconType; title: string; sub: string; done?: boolean; doneLabel?: string; reward: string; cta: string;
+function Task({ icon: Icon, title, sub, done, doneLabel = "Done", reward, cta, highlight, ...rest }: {
+  icon: IconType; title: string; sub: string; done?: boolean; doneLabel?: string; reward: string; cta: string; highlight?: boolean;
 } & React.ButtonHTMLAttributes<HTMLButtonElement> & { "data-cmd": string }) {
   return (
-    <button className={`task ${done ? "done" : ""}`} {...rest}>
+    <button className={`task ${done ? "done" : ""} ${highlight && !done ? "attention" : ""}`} {...rest}>
       <span className="task-ico">{done ? <LuCheck aria-hidden /> : <Icon aria-hidden />}</span>
       <span className="task-body"><b>{title}</b><small>{sub}</small></span>
       <span className="task-end">
