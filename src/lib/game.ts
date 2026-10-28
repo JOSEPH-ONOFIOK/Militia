@@ -8,12 +8,12 @@ export const X_PROFILE = `https://x.com/${X_HANDLE}`;
 const PINNED_ID = /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_PINNED_POST ?? "")?.[1];
 export const PINNED_POST = PINNED_ID ? `https://x.com/${X_HANDLE}/status/${PINNED_ID}` : X_PROFILE;
 
-// The post pending recruits reply "$intel" under and repost to get approved.
+// The post pending recruits reply "$INTEL" (tagging a friend) under and repost to get approved.
 // NEXT_PUBLIC_APPROVAL_POST, falling back to the pinned post. Empty means approval isn't open yet.
 export const APPROVAL_POST_ID =
   /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_APPROVAL_POST ?? "")?.[1] ?? PINNED_ID;
 export const APPROVAL_POST = APPROVAL_POST_ID ? `https://x.com/${X_HANDLE}/status/${APPROVAL_POST_ID}` : null;
-export const INTEL_WORD = "$intel";
+export const INTEL_WORD = "$INTEL";
 export type ApprovalStep = "follow" | "repost" | "reply";
 
 export type MissionId = "follow" | "quote" | "tag" | "era";
@@ -23,7 +23,7 @@ type ProofKind = "none" | "link" | "text";
 export const MISSIONS: { id: MissionId; title: string; brief: string; xp: number; proof: ProofKind; placeholder?: string }[] = [
   { id: "follow", title: `Follow @${X_HANDLE}`, brief: "That's where the list, the mint date and everything else gets posted first.", xp: 100, proof: "none" },
   { id: "quote", title: "Like and quote", brief: "Like our post, then quote it and tell people why you're enlisting. Paste your quote link below.", xp: 250, proof: "link", placeholder: "https://x.com/you/status/…" },
-  { id: "tag", title: "Tag 3 friends", brief: "Comment on the same post tagging 3 friends who should enlist. Paste the link to your comment.", xp: 200, proof: "link", placeholder: "https://x.com/you/status/…" },
+  { id: "tag", title: "Tag 3 friends", brief: "Comment $INTEL on the same post and tag 3 friends who should enlist. Paste the link to your comment.", xp: 200, proof: "link", placeholder: "https://x.com/you/status/…" },
   { id: "era", title: "Your era", brief: "When did you pick up your first NFT? Tell us where you were back then too, if you want.", xp: 100, proof: "text", placeholder: "2021, minting pixel art at 3am…" },
 ];
 
@@ -79,7 +79,7 @@ export type Recruit = {
   referrals: number;
   missions: Partial<Record<MissionId, number>>; // timestamp completed
   proofs?: Partial<Record<MissionId, string>>; // quote and comment links, era answer; never sent to other visitors
-  // Pending → Approved: follow and repost taps, the verified "$intel" reply, and when approval happened
+  // Pending → Approved: follow and repost taps, the verified "$INTEL" reply, and when approval happened
   approval?: { follow?: number; repost?: number; reply?: string; at?: number };
   wallet?: string;
   createdAt: number;
@@ -124,7 +124,7 @@ export function isValidWallet(w: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(w);
 }
 
-// Approval needs all three: the follow and repost taps and a verified "$intel" reply
+// Approval needs all three: the follow and repost taps and a verified "$INTEL" reply
 export function maybeApprove(r: Recruit) {
   const a = r.approval;
   if (a && !a.at && a.follow && a.repost && a.reply) a.at = Date.now();

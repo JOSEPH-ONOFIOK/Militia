@@ -1,6 +1,8 @@
 // Reads a public X post through X's public embed data (the same source X's embeds use).
 // No X API key needed, but it only sees public posts.
 
+import { X_HANDLE } from "./game";
+
 const POST_LINK = /(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x|twitter)\.com\/(\w{1,15})\/status(?:es)?\/(\d+)/i;
 
 type PublicPost = { author: string; text: string; replyTo?: string };
@@ -20,6 +22,7 @@ async function fetchPost(id: string): Promise<PublicPost | null> {
 }
 
 // Checks that `link` is a public reply by `handle`, directly under the approval post, containing the word
+// and tagging at least one friend (anyone but us and themselves)
 export async function verifyReply(
   link: string,
   handle: string,
@@ -40,5 +43,8 @@ export async function verifyReply(
   }
   if (post.replyTo !== postId) return { ok: false, error: "That isn't a reply to our post. Reply directly under it." };
   if (!post.text.toLowerCase().includes(word.toLowerCase())) return { ok: false, error: `Your reply needs to say ${word}.` };
+  const skip = new Set([X_HANDLE.toLowerCase(), handle.toLowerCase()]);
+  const friends = [...post.text.matchAll(/@(\w{1,15})/g)].filter((t) => !skip.has(t[1].toLowerCase()));
+  if (!friends.length) return { ok: false, error: "Tag at least one friend in your reply." };
   return { ok: true, link: `https://x.com/${post.author}/status/${m[2]}` };
 }

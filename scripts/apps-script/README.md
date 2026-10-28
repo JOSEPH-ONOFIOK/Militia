@@ -114,7 +114,7 @@ A new deployment gets a new URL. To keep the existing one:
 | Comment Link | Link to their comment tagging 3 friends (step 4) |
 | Era | Their answer to "When did you pick up your first NFT?" (step 5) |
 | Approved At | When they moved from Pending to Approved (blank while pending) |
-| Intel Reply | Their verified "$intel" reply under the approval post |
+| Intel Reply | Their verified "$INTEL" reply (tagging a friend) under the approval post |
 
 **Leaderboard** is the same list sorted by XP, kept up to date by a formula.
 Browse and filter there. Sorting or filtering the Recruits tab is also safe:

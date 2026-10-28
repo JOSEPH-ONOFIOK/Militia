@@ -69,7 +69,7 @@ const TASK_ICON: Record<string, IconType> = {
 // The single most useful thing this recruit can do next
 function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } {
   const m = (id: MissionId) => MISSIONS.find((x) => x.id === id)!;
-  if (APPROVAL_POST_ID && !r.approved) return { cmd: "approve", title: "Get approved: follow, repost, reply $intel", xp: "Pending →" };
+  if (APPROVAL_POST_ID && !r.approved) return { cmd: "approve", title: "Get approved: follow, repost, reply $INTEL + tag a friend", xp: "Pending →" };
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
   if (!r.missions.quote) return { cmd: "quote", title: "Like and quote our post", xp: `+${m("quote").xp}` };
   if (!r.missions.tag) return { cmd: "tag", title: "Tag 3 friends", xp: `+${m("tag").xp}` };
@@ -545,7 +545,7 @@ export default function WarRoom() {
           ["  status        rank, XP, allowlist standing", "ink"],
           ["  orders        your task list", "ink"],
           ["  follow | quote | tag | era   open a step", "ink"],
-          ["  approve       get approved: follow, repost, reply $intel", "ink"],
+          ["  approve       get approved: follow, repost, reply $INTEL", "ink"],
           ["  recruit       copy your recruitment link", "ink"],
           ["  wallet <addr> submit mint wallet", "ink"],
           ["  card          download your draft card", "ink"],

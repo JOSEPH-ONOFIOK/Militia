@@ -7,7 +7,7 @@ import { verifyReply } from "@/lib/xpost";
 
 const STEPS: ApprovalStep[] = ["follow", "repost", "reply"];
 
-// Pending → Approved: records the follow and repost taps, verifies the "$intel" reply,
+// Pending → Approved: records the follow and repost taps, verifies the "$INTEL" reply,
 // and approves the recruit once all three are in.
 export async function POST(req: Request) {
   if (!APPROVAL_POST_ID) return bad("Approval isn't open yet.", 404);

@@ -8,10 +8,10 @@ import { APPROVAL_POST_ID, INTEL_WORD, X_HANDLE, type ApprovalStep, type PublicR
 const LINKS = {
   follow: `https://x.com/intent/follow?screen_name=${X_HANDLE}`,
   repost: `https://x.com/intent/retweet?tweet_id=${APPROVAL_POST_ID}`,
-  reply: `https://x.com/intent/tweet?in_reply_to=${APPROVAL_POST_ID}&text=${encodeURIComponent(INTEL_WORD)}`,
+  reply: `https://x.com/intent/tweet?in_reply_to=${APPROVAL_POST_ID}&text=${encodeURIComponent(`${INTEL_WORD} `)}`,
 };
 
-// Pending → Approved: follow, repost, and reply "$intel" under the approval post
+// Pending → Approved: follow, repost, and reply "$INTEL" and tag a friend under the approval post
 export default function Approval({ me, onStep, onReply }: {
   me: PublicRecruit;
   onStep: (step: Exclude<ApprovalStep, "reply">) => void;
@@ -74,7 +74,7 @@ export default function Approval({ me, onStep, onReply }: {
         </li>
         <li className={`ap-reply ${s.reply ? "done" : ""}`}>
           <span className="ap-num">{s.reply ? <LuCheck aria-hidden /> : <LuMessageSquareReply aria-hidden />}</span>
-          <span className="ap-text">Reply <code>{INTEL_WORD}</code> under the post</span>
+          <span className="ap-text">Reply <code>{INTEL_WORD}</code> and tag a friend under the post</span>
           {!s.reply && (
             <a className="btn btn-sm btn-x" href={LINKS.reply} target="_blank" rel="noopener"><FaXTwitter aria-hidden />Reply<LuArrowUpRight aria-hidden /></a>
           )}
