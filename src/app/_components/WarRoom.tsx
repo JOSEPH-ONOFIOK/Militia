@@ -99,7 +99,7 @@ export default function WarRoom() {
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
   const [sheet, setSheet] = useState<null | "share" | "wallet">(null);
   const [fileOf, setFileOf] = useState<Focus | null>(null); // full personnel file
-  const [promo, setPromo] = useState<{ secured: boolean; approved?: boolean; k: number } | null>(null);
+  const [promo, setPromo] = useState<{ secured: boolean; k: number } | null>(null);
   const [notes, setNotes] = useState<{ id: number; handle: string; soldierId: number }[]>([]);
   const seenRecent = useRef<Set<string> | null>(null);
   const noteId = useRef(0);
@@ -250,7 +250,8 @@ export default function WarRoom() {
 
   // ---------- approval celebration ----------
   useEffect(() => {
-    const on = () => setTimeout(() => setPromo((p) => ({ secured: false, approved: true, k: (p?.k ?? 0) + 1 })), 600);
+    // Approved: bring their card back up, now stamped APPROVED, so they post it
+    const on = () => setTimeout(() => setSheet("share"), 600);
     window.addEventListener("swole:approved", on);
     return () => window.removeEventListener("swole:approved", on);
   }, []);
@@ -1063,7 +1064,7 @@ export default function WarRoom() {
           <div className="file-sheet"><Dossier soldier={getSoldier(fileOf.id)} handle={fileOf.handle} approved={!!me && fileOf.handle === me.handle && me.approved} /></div>
         </Sheet>
       )}
-      {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} approved={promo.approved} onClose={() => setPromo(null)} />}
+      {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} onClose={() => setPromo(null)} />}
       {walletNudge && me && !me.hasWallet && !sheet && (
         <div className="wallet-nudge" role="alert">
           <span className="wn-ico"><LuWallet aria-hidden /></span>

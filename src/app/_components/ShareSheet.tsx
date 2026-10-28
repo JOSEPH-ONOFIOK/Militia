@@ -10,6 +10,7 @@ import Sheet from "./Sheet";
 export function shareText(r: PublicRecruit) {
   const s = getSoldier(r.soldierId);
   const rc = rarityClass(s.rank);
+  if (r.approved) return `Clearance APPROVED 🪖\n\nMilitia #${s.id} · ${rc.label} (rarity #${s.rank}) reporting for duty.\n\nGet yours in the @${X_HANDLE} war room 👇`;
   return `Joined the Militia draft. Recruit pending 🪖\n\nMatched with Militia #${s.id} · ${rc.label} (rarity #${s.rank})\n\nYou don't pick yours. Report to the @${X_HANDLE} war room 👇`;
 }
 
@@ -62,7 +63,7 @@ export default function ShareSheet({ recruit, onPosted, onClose, toast }: {
   }
 
   return (
-    <Sheet title="Share your draft card" icon={LuShare2} onClose={onClose} wide>
+    <Sheet title={recruit.approved ? "You're approved. Post your card" : "Share your draft card"} icon={LuShare2} onClose={onClose} wide>
       <div className="share">
         <div className="share-preview">
           {img ? (
