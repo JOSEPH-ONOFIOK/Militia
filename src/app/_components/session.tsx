@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { checkProof, isValidWallet, toPublic, type MissionId, type PublicRecruit, type Recruit } from "@/lib/game";
+import { checkProof, isValidWallet, maybeApprove, toPublic, type MissionId, type PublicRecruit, type Recruit } from "@/lib/game";
 import { isValidHandle, normalizeHandle, soldierIdForHandle } from "@/lib/swole";
 
 export type AuthInfo = { mode: "x" | "handle"; storage: "server" | "local"; turnstileSiteKey: string | null };
@@ -33,6 +33,10 @@ function localAction(r: Recruit, path: string, body: Record<string, unknown>): s
       if (!proof.ok) return proof.error;
       r.missions[m] ??= Date.now();
       if (proof.value) r.proofs = { ...r.proofs, [m]: proof.value };
+      if (m === "follow") {
+        r.approval = { ...r.approval, follow: r.approval?.follow ?? Date.now() };
+        maybeApprove(r);
+      }
       return null;
     }
     case "/api/wallet": {
@@ -76,8 +80,10 @@ export function SessionProvider({ children }: { children: ReactNode }) {
   const [ready, setReady] = useState(false);
   const [toastMsg, setToastMsg] = useState<string | null>(null);
   const xpRef = useRef<number | null>(null);
+  const approvedRef = useRef(false);
   useEffect(() => {
     xpRef.current = recruit?.xp ?? null;
+    approvedRef.current = !!recruit?.approved;
   }, [recruit]);
 
   const toast = useCallback((m: string) => {
@@ -157,12 +163,27 @@ export function SessionProvider({ children }: { children: ReactNode }) {
       const r = db.me ? db.recruits[db.me] : null;
       if (!r) return { error: "Please sign in first." };
       const before = toPublic(r).xp;
-      const error = localAction(r, path, body);
+      const wasApproved = !!r.approval?.at;
+      let error: string | null = null;
+      if (path === "/api/approval") {
+        // the server checks the reply on X; the result is kept in this browser
+        if (body.step === "reply") {
+          const res = await fetch(path, { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ ...body, handle: r.handle }) });
+          const d = await res.json().catch(() => ({}));
+          if (!res.ok) return { error: (d.error as string) ?? "Couldn't check your reply." };
+          r.approval = { ...r.approval, reply: d.link };
+        } else if (body.step === "follow" || body.step === "repost") {
+          r.approval = { ...r.approval, [body.step]: r.approval?.[body.step] ?? Date.now() };
+          if (body.step === "follow") r.missions.follow ??= Date.now();
+        }
+        maybeApprove(r);
+      } else error = localAction(r, path, body);
       if (error) return { error };
       writeLocal(db);
       const pub = toPublic(r);
       setRecruit(pub);
       if (pub.xp > before) window.dispatchEvent(new CustomEvent("swole:xp", { detail: { gain: pub.xp - before, before, after: pub.xp } }));
+      if (pub.approved && !wasApproved) window.dispatchEvent(new Event("swole:approved"));
       return {};
     }
     const res = await fetch(path, {
@@ -174,6 +195,7 @@ export function SessionProvider({ children }: { children: ReactNode }) {
     if (!res.ok) return { error: (d.error as string) ?? "Something went wrong." };
     if (d.recruit) {
       const gained = xpRef.current === null ? 0 : d.recruit.xp - xpRef.current;
+      if (d.recruit.approved && !approvedRef.current) window.dispatchEvent(new Event("swole:approved"));
       setRecruit(d.recruit);
       if (gained > 0) window.dispatchEvent(new CustomEvent("swole:xp", { detail: { gain: gained, before: xpRef.current!, after: d.recruit.xp } }));
     }

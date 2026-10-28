@@ -3,7 +3,7 @@ import { CATEGORIES, gifSrc, rarityClass, type Soldier } from "@/lib/swole";
 const TONE: Record<string, string> = { mythic: "#ff4fd8", elite: "#ffd34d", veteran: "#8fd8ff", grunt: "#8b927f" };
 
 // Renders a 1200×675 PNG draft card on a canvas (perfect size for an X post).
-export async function renderCard(handle: string, s: Soldier, serial: string) {
+export async function renderCard(handle: string, s: Soldier, serial: string, approved = false) {
   const W = 1200, H = 675;
   const c = document.createElement("canvas");
   c.width = W;
@@ -69,11 +69,12 @@ export async function renderCard(handle: string, s: Soldier, serial: string) {
   g.save();
   g.translate(H - 150, H - 70);
   g.rotate(-0.1);
-  g.strokeStyle = g.fillStyle = "#ff3b30";
+  const stamp = approved ? "APPROVED" : "PENDING";
+  g.strokeStyle = g.fillStyle = approved ? "#8de868" : "#ff3b30";
   g.lineWidth = 4;
   g.font = `bold 30px ${pixel}`;
-  g.strokeRect(-12, -38, g.measureText("PENDING").width + 24, 52);
-  g.fillText("PENDING", 0, 0);
+  g.strokeRect(-12, -38, g.measureText(stamp).width + 24, 52);
+  g.fillText(stamp, 0, 0);
   g.restore();
 
   return new Promise<Blob>((res) => c.toBlob((b) => res(b!), "image/png"));

@@ -25,7 +25,7 @@
  */
 
 /** Bumped whenever this file changes, so `?version` shows which copy is deployed. */
-var SCRIPT_VERSION = 3;
+var SCRIPT_VERSION = 4;
 
 var SHEET_NAME = 'Recruits';
 var BOARD_NAME = 'Leaderboard';
@@ -55,6 +55,9 @@ var HEADERS = [
   'Quote Link',
   'Comment Link',
   'Era',
+  // Added in version 4: Pending → Approved
+  'Approved At',
+  'Intel Reply',
 ];
 
 /**
@@ -195,6 +198,9 @@ function buildRow(r, d) {
   row[col('Quote Link') - 1] = safeText(p.quote);
   row[col('Comment Link') - 1] = safeText(p.tag);
   row[col('Era') - 1] = safeText(p.era);
+  var a = r.approval || {};
+  row[col('Approved At') - 1] = a.at ? new Date(Number(a.at)).toISOString() : '';
+  row[col('Intel Reply') - 1] = safeText(a.reply);
   return row;
 }
 

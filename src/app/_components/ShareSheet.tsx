@@ -27,7 +27,7 @@ export default function ShareSheet({ recruit, onPosted, onClose, toast }: {
     let url = "";
     const soldier = getSoldier(recruit.soldierId);
     import("./card")
-      .then(({ renderCard }) => renderCard(recruit.handle, soldier, serialFor(recruit.handle, soldier.id)))
+      .then(({ renderCard }) => renderCard(recruit.handle, soldier, serialFor(recruit.handle, soldier.id), recruit.approved))
       .then((blob) => {
         url = URL.createObjectURL(blob);
         setImg({ url, blob });
@@ -35,7 +35,7 @@ export default function ShareSheet({ recruit, onPosted, onClose, toast }: {
     return () => {
       if (url) URL.revokeObjectURL(url);
     };
-  }, [recruit.handle, recruit.soldierId]);
+  }, [recruit.handle, recruit.soldierId, recruit.approved]);
 
   function postX() {
     window.open(`https://x.com/intent/post?text=${encodeURIComponent(shareText(recruit))}&url=${encodeURIComponent(link)}`, "_blank", "noopener");

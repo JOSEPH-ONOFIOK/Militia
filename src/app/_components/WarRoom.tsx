@@ -1,7 +1,7 @@
 "use client";
 
 import { useCallback, useEffect, useRef, useState } from "react";
-import { MISSIONS, RANKS, SECURED_AT, X_HANDLE, X_PROFILE, XP, rankFor, type MissionId, type PublicRecruit } from "@/lib/game";
+import { APPROVAL_POST_ID, MISSIONS, RANKS, SECURED_AT, X_HANDLE, X_PROFILE, XP, rankFor, type MissionId, type PublicRecruit } from "@/lib/game";
 import { CATEGORIES, SUPPLY, getSoldier, gifSrc, isValidHandle, normalizeHandle, rarityClass, serialFor, traitPct } from "@/lib/swole";
 import { useSession } from "./session";
 import Radar, { type Blip } from "./Radar";
@@ -14,6 +14,7 @@ import Countdown from "./Countdown";
 import Sheet from "./Sheet";
 import Dossier from "./Dossier";
 import Steps from "./Steps";
+import Approval from "./Approval";
 import { FACTIONS, factionOf, standings } from "@/lib/factions";
 import { beep, chord, err, setSound, soundOn } from "./sound";
 import type { IconType } from "react-icons";
@@ -68,6 +69,7 @@ const TASK_ICON: Record<string, IconType> = {
 // The single most useful thing this recruit can do next
 function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } {
   const m = (id: MissionId) => MISSIONS.find((x) => x.id === id)!;
+  if (APPROVAL_POST_ID && !r.approved) return { cmd: "approve", title: "Get approved: follow, repost, reply $intel", xp: "Pending →" };
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
   if (!r.missions.quote) return { cmd: "quote", title: "Like and quote our post", xp: `+${m("quote").xp}` };
   if (!r.missions.tag) return { cmd: "tag", title: "Tag 3 friends", xp: `+${m("tag").xp}` };
@@ -97,7 +99,7 @@ export default function WarRoom() {
   const [gain, setGain] = useState<{ n: number; k: number } | null>(null);
   const [sheet, setSheet] = useState<null | "share" | "wallet">(null);
   const [fileOf, setFileOf] = useState<Focus | null>(null); // full personnel file
-  const [promo, setPromo] = useState<{ secured: boolean; k: number } | null>(null);
+  const [promo, setPromo] = useState<{ secured: boolean; approved?: boolean; k: number } | null>(null);
   const [notes, setNotes] = useState<{ id: number; handle: string; soldierId: number }[]>([]);
   const seenRecent = useRef<Set<string> | null>(null);
   const noteId = useRef(0);
@@ -221,7 +223,7 @@ export default function WarRoom() {
   // In browser storage mode there is no shared data, so the radar and board show just this recruit
   const intel: Intel | null = local
     ? recruit
-      ? { count: 1, top: [recruit], recent: [{ handle: recruit.handle, soldierId: recruit.soldierId }], blips: [{ handle: recruit.handle, xp: recruit.xp }] }
+      ? { count: 1, top: [recruit], recent: [{ handle: recruit.handle, soldierId: recruit.soldierId }], blips: [{ handle: recruit.handle, xp: recruit.xp, approved: recruit.approved }] }
       : { count: 0, top: [], recent: [], blips: [] }
     : serverIntel;
 
@@ -244,6 +246,13 @@ export default function WarRoom() {
       window.removeEventListener("swole:xp", on);
       clearTimeout(t);
     };
+  }, []);
+
+  // ---------- approval celebration ----------
+  useEffect(() => {
+    const on = () => setTimeout(() => setPromo((p) => ({ secured: false, approved: true, k: (p?.k ?? 0) + 1 })), 600);
+    window.addEventListener("swole:approved", on);
+    return () => window.removeEventListener("swole:approved", on);
   }, []);
 
   // ---------- intel feed ----------
@@ -412,7 +421,7 @@ export default function WarRoom() {
     toggleRight(true);
     setCoach(false);
     setTimeout(() => {
-      const el = document.getElementById(`step-input-${id}`);
+      const el = document.getElementById(id === "approval-reply" ? "approval-reply" : `step-input-${id}`) ?? document.getElementById("approval");
       el?.scrollIntoView({ block: "center", behavior: "smooth" });
       el?.focus({ preventScroll: true });
     }, 120);
@@ -424,6 +433,18 @@ export default function WarRoom() {
     if (r.error) return r.error;
     beep(1320, 0.08, "triangle");
     print([`[OK] ${def.title.toUpperCase()} · +${def.xp} XP`, "green"]);
+    return null;
+  }
+
+  async function approvalStep(step: "follow" | "repost") {
+    const r = await call("/api/approval", { step });
+    if (r.error) print([`! ${r.error.toUpperCase()}`, "red"]);
+  }
+
+  async function approvalReply(link: string) {
+    const r = await call("/api/approval", { step: "reply", link });
+    if (r.error) return r.error;
+    print(["[OK] $INTEL REPLY VERIFIED", "green"]);
     return null;
   }
 
@@ -448,7 +469,7 @@ export default function WarRoom() {
     if (!recruit) return print(["ENLIST FIRST.", "red"]);
     const s = getSoldier(recruit.soldierId);
     const { renderCard } = await import("./card");
-    const blob = await renderCard(recruit.handle, s, serialFor(recruit.handle, s.id));
+    const blob = await renderCard(recruit.handle, s, serialFor(recruit.handle, s.id), recruit.approved);
     const a = document.createElement("a");
     a.href = URL.createObjectURL(blob);
     a.download = `militia-${s.id}-${recruit.handle}.png`;
@@ -524,6 +545,7 @@ export default function WarRoom() {
           ["  status        rank, XP, allowlist standing", "ink"],
           ["  orders        your task list", "ink"],
           ["  follow | quote | tag | era   open a step", "ink"],
+          ["  approve       get approved: follow, repost, reply $intel", "ink"],
           ["  recruit       copy your recruitment link", "ink"],
           ["  wallet <addr> submit mint wallet", "ink"],
           ["  card          download your draft card", "ink"],
@@ -536,6 +558,7 @@ export default function WarRoom() {
       case "orders": return orders();
       case "follow": case "quote": case "tag": case "era": return mission(cmd.toLowerCase() as MissionId);
       case "share": return share();
+      case "approve": return recruit ? goToStep("approval-reply") : print(["SIGN IN FIRST.", "red"]);
       case "recruit": case "ref": return recruitLink();
       case "wallet": return wallet(arg);
       case "card": return card();
@@ -611,6 +634,7 @@ export default function WarRoom() {
     const c = e.currentTarget.dataset.cmd!;
     if (c === "wallet") setSheet("wallet");
     else if (c === "quote" || c === "tag" || c === "era") goToStep(c);
+    else if (c === "approve") goToStep("approval-reply");
     else if (c === "file" && recruit) setFileOf({ id: recruit.soldierId, handle: recruit.handle });
     else exec(c);
   };
@@ -847,7 +871,7 @@ export default function WarRoom() {
                 <div className="profile-id">
                   <b>@{me.handle}</b>
                   <span className="muted">Matched with Militia #{me.soldierId}</span>
-                  <span className="pill pending">Draft pending</span>
+                  <span className={`pill ${me.approved ? "approved" : "pending"}`}>{me.approved ? "Approved" : "Pending"}</span>
                   <span className={`pill tone-${rarity.tone}`}>{rarity.label} · rarity #{mySoldier.rank}</span>
                 </div>
               </div>
@@ -926,6 +950,7 @@ export default function WarRoom() {
                   </div>
                 </div>
               )}
+              {me && <Approval me={me} onStep={approvalStep} onReply={approvalReply} />}
               <Steps
                 me={me}
                 onFollow={() => mission("follow")}
@@ -1035,10 +1060,10 @@ export default function WarRoom() {
       )}
       {fileOf && (
         <Sheet title={`Personnel file #${fileOf.id}`} icon={LuFileText} onClose={() => setFileOf(null)} wide>
-          <div className="file-sheet"><Dossier soldier={getSoldier(fileOf.id)} handle={fileOf.handle} /></div>
+          <div className="file-sheet"><Dossier soldier={getSoldier(fileOf.id)} handle={fileOf.handle} approved={!!me && fileOf.handle === me.handle && me.approved} /></div>
         </Sheet>
       )}
-      {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} onClose={() => setPromo(null)} />}
+      {promo && me && <Promotion key={promo.k} recruit={me} secured={promo.secured} approved={promo.approved} onClose={() => setPromo(null)} />}
       {walletNudge && me && !me.hasWallet && !sheet && (
         <div className="wallet-nudge" role="alert">
           <span className="wn-ico"><LuWallet aria-hidden /></span>

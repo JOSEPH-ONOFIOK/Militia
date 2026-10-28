@@ -3,7 +3,7 @@
 import { useEffect, useRef, useState } from "react";
 import { RANKS, rankFor } from "@/lib/game";
 
-export type Blip = { handle: string; xp: number };
+export type Blip = { handle: string; xp: number; approved?: boolean };
 
 const TAU = Math.PI * 2;
 const SWEEP_MS = 4200;
@@ -146,7 +146,7 @@ export default function Radar({ blips, me }: { blips: Blip[]; me?: string }) {
         if (since < 0) since += TAU;
         const glow = reduce ? 0.9 : Math.max(0.18, 1 - since / 4.2);
         const mine = b.handle === me;
-        const secured = rankFor(b.xp).index >= 4;
+        const secured = !!b.approved || rankFor(b.xp).index >= 4; // cleared: approved, or Lieutenant and up
         const col = mine ? "255,92,72" : secured ? "255,184,48" : "141,232,104";
         g.fillStyle = `rgba(${col},${mine ? 1 : glow})`;
         g.shadowColor = `rgba(${col},1)`;

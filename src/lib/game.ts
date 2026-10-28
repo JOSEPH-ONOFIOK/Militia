@@ -8,6 +8,14 @@ export const X_PROFILE = `https://x.com/${X_HANDLE}`;
 const PINNED_ID = /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_PINNED_POST ?? "")?.[1];
 export const PINNED_POST = PINNED_ID ? `https://x.com/${X_HANDLE}/status/${PINNED_ID}` : X_PROFILE;
 
+// The post pending recruits reply "$intel" under and repost to get approved.
+// NEXT_PUBLIC_APPROVAL_POST, falling back to the pinned post. Empty means approval isn't open yet.
+export const APPROVAL_POST_ID =
+  /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_APPROVAL_POST ?? "")?.[1] ?? PINNED_ID;
+export const APPROVAL_POST = APPROVAL_POST_ID ? `https://x.com/${X_HANDLE}/status/${APPROVAL_POST_ID}` : null;
+export const INTEL_WORD = "$intel";
+export type ApprovalStep = "follow" | "repost" | "reply";
+
 export type MissionId = "follow" | "quote" | "tag" | "era";
 type ProofKind = "none" | "link" | "text";
 
@@ -71,12 +79,19 @@ export type Recruit = {
   referrals: number;
   missions: Partial<Record<MissionId, number>>; // timestamp completed
   proofs?: Partial<Record<MissionId, string>>; // quote and comment links, era answer; never sent to other visitors
+  // Pending → Approved: follow and repost taps, the verified "$intel" reply, and when approval happened
+  approval?: { follow?: number; repost?: number; reply?: string; at?: number };
   wallet?: string;
   createdAt: number;
   rev?: number; // revision, used by the Google Sheets store to detect concurrent saves
 };
 
-export type PublicRecruit = Omit<Recruit, "wallet" | "xid" | "proofs"> & { xp: number; hasWallet: boolean };
+export type PublicRecruit = Omit<Recruit, "wallet" | "xid" | "proofs" | "approval"> & {
+  xp: number;
+  hasWallet: boolean;
+  approved: boolean;
+  approvalSteps: Record<ApprovalStep, boolean>;
+};
 
 export function computeXp(r: Recruit) {
   let xp = XP.enlist;
@@ -94,11 +109,24 @@ export function rankFor(xp: number) {
 
 export function toPublic(r: Recruit): PublicRecruit {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { wallet, xid, proofs, ...rest } = r;
-  return { ...rest, xp: computeXp(r), hasWallet: !!wallet };
+  const { wallet, xid, proofs, approval, ...rest } = r;
+  return {
+    ...rest,
+    xp: computeXp(r),
+    hasWallet: !!wallet,
+    approved: !!approval?.at,
+    approvalSteps: { follow: !!approval?.follow, repost: !!approval?.repost, reply: !!approval?.reply },
+  };
 }
 
 // Robinhood Chain and Ethereum share the same 0x address format, so one address works on both
 export function isValidWallet(w: string) {
   return /^0x[a-fA-F0-9]{40}$/.test(w);
+}
+
+// Approval needs all three: the follow and repost taps and a verified "$intel" reply
+export function maybeApprove(r: Recruit) {
+  const a = r.approval;
+  if (a && !a.at && a.follow && a.repost && a.reply) a.at = Date.now();
+  return !!r.approval?.at;
 }

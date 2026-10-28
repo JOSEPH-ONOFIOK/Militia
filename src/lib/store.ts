@@ -17,7 +17,7 @@ interface Store {
   recent(n: number): Promise<Recruit[]>;
   count(): Promise<number>;
   all(): Promise<Recruit[]>;
-  ranked(n: number): Promise<{ handle: string; xp: number }[]>;
+  ranked(n: number): Promise<{ handle: string; xp: number; approved?: boolean }[]>;
   handleForXid(xid: string): Promise<string | null>;
   linkXid(xid: string, handle: string): Promise<void>;
   // Adds one invite to a recruit atomically, so simultaneous sign ups all count.
@@ -174,7 +174,7 @@ const file: Store = {
     return ++w.n <= max;
   },
   async ranked(n) {
-    return (await this.all()).slice(0, n).map((r) => ({ handle: r.handle, xp: computeXp(r) }));
+    return (await this.all()).slice(0, n).map((r) => ({ handle: r.handle, xp: computeXp(r), approved: !!r.approval?.at }));
   },
 };
 
@@ -240,6 +240,7 @@ function merge(mine: Recruit, theirs: Recruit): Recruit {
     ...mine,
     missions,
     proofs: { ...theirs.proofs, ...mine.proofs },
+    approval: { ...theirs.approval, ...mine.approval, at: theirs.approval?.at ?? mine.approval?.at },
     referrals: Math.max(mine.referrals, theirs.referrals),
     wallet: mine.wallet ?? theirs.wallet,
     xid: theirs.xid ?? mine.xid,
@@ -305,7 +306,7 @@ const sheets: Store = {
     return sortedByXp(await sheetList());
   },
   async ranked(n) {
-    return sortedByXp(await sheetList()).slice(0, n).map((r) => ({ handle: r.handle, xp: computeXp(r) }));
+    return sortedByXp(await sheetList()).slice(0, n).map((r) => ({ handle: r.handle, xp: computeXp(r), approved: !!r.approval?.at }));
   },
   async handleForXid(xid) {
     return (await sheetGet<{ handle: string | null }>({ xid })).handle;

@@ -1,14 +1,14 @@
 import { CATEGORIES, gifSrc, rarityClass, serialFor, traitPct, type Soldier } from "@/lib/swole";
 
 // The draft card. Used in the Draft reveal, the Barracks modal and the /d/[handle] share page.
-export default function Dossier({ soldier, handle }: { soldier: Soldier; handle?: string }) {
+export default function Dossier({ soldier, handle, approved }: { soldier: Soldier; handle?: string; approved?: boolean }) {
   const rc = rarityClass(soldier.rank);
   return (
     <div className="panel hud reveal" style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(260px, 1fr))" }}>
       <div className="dossier-art" style={{ background: "#000", borderRight: "1px solid var(--line)" }}>
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={gifSrc(soldier.id)} alt={`Militia #${soldier.id}`} className="px" style={{ width: "100%", aspectRatio: "1" }} />
-        {handle && <span className="stamp">Pending</span>}
+        {handle && <span className={`stamp ${approved ? "ok" : ""}`}>{approved ? "Approved" : "Pending"}</span>}
       </div>
       <div style={{ padding: "22px 22px 20px", display: "flex", flexDirection: "column", gap: 14 }}>
         <div style={{ display: "flex", justifyContent: "space-between", gap: 12, alignItems: "start" }}>
