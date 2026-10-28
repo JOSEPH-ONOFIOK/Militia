@@ -335,7 +335,7 @@ svg { flex: none; }
 }
 .side-body { flex: 1; padding: 16px; }
 
-.stack { display: grid; gap: 14px; }
+.stack { display: grid; grid-template-columns: minmax(0, 1fr); gap: 14px; } /* let cards shrink to the panel */
 .stack.tight { gap: 8px; }
 .row { display: flex; align-items: baseline; justify-content: space-between; gap: 10px; }
 .row.small { font-size: 12px; color: var(--muted); }
@@ -417,7 +417,7 @@ svg { flex: none; }
 .task-done { font-size: 12px; font-weight: 600; color: var(--green); }
 
 /* numbered steps */
-.step-list { list-style: none; margin: 0; padding: 0; display: grid; gap: 8px; }
+.step-list { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: 8px; }
 .step {
   display: flex; gap: 12px; padding: 12px; border: 1px solid var(--line-2); border-radius: var(--r); background: transparent;
   transition: border-color 0.15s, background 0.15s;
@@ -442,16 +442,16 @@ svg { flex: none; }
 
 .proof { display: grid; gap: 6px; }
 .proof-open { justify-self: start; }
-.proof-row { display: flex; gap: 8px; align-items: flex-start; }
+.proof-row { display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-start; }
 .proof-row input, .proof-row textarea {
-  flex: 1; min-width: 0; padding: 9px 11px; border-radius: var(--r-sm);
+  flex: 1 1 170px; width: 0; min-width: 0; /* width:0 stops the field's default size from widening the card */ padding: 9px 11px; border-radius: var(--r-sm);
   border: 1px solid var(--btn-line); background: var(--bg); color: var(--ink); font: inherit; font-size: 13.5px; outline: none;
   resize: vertical;
 }
 .proof-row input.mono { font-family: var(--font-mono), monospace; font-size: 13px; }
 .proof-row input:focus, .proof-row textarea:focus { border-color: var(--green); box-shadow: 0 0 0 3px var(--green-soft); }
 .proof-row input[aria-invalid="true"], .proof-row textarea[aria-invalid="true"] { border-color: var(--red); }
-.proof-row .btn { height: 38px; flex: none; }
+.proof-row .btn { height: 38px; flex: 0 0 auto; margin-left: auto; }
 .proof-count { justify-self: end; font-size: 11px; color: var(--dim); }
 @media (max-width: 420px) {
   .proof-row { flex-direction: column; align-items: stretch; }
