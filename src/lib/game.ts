@@ -9,10 +9,8 @@ const PINNED_ID = /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.
 export const PINNED_POST = PINNED_ID ? `https://x.com/${X_HANDLE}/status/${PINNED_ID}` : X_PROFILE;
 
 // The post pending recruits reply "$INTEL" (tagging a friend) under and repost to get approved.
-// NEXT_PUBLIC_APPROVAL_POST, falling back to the pinned post. Empty means approval isn't open yet.
-export const APPROVAL_POST_ID =
-  /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_APPROVAL_POST ?? "")?.[1] ?? PINNED_ID;
-export const APPROVAL_POST = APPROVAL_POST_ID ? `https://x.com/${X_HANDLE}/status/${APPROVAL_POST_ID}` : null;
+// It's the pinned post (NEXT_PUBLIC_PINNED_POST). Empty means approval isn't open yet.
+export const APPROVAL_POST_ID = PINNED_ID;
 export const INTEL_WORD = "$INTEL";
 export type ApprovalStep = "follow" | "repost" | "reply";
 
