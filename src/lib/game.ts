@@ -21,7 +21,7 @@ type ProofKind = "none" | "link" | "text";
 export const MISSIONS: { id: MissionId; title: string; brief: string; xp: number; proof: ProofKind; placeholder?: string }[] = [
   { id: "follow", title: `Follow @${X_HANDLE}`, brief: "That's where the list, the mint date and everything else gets posted first.", xp: 100, proof: "none" },
   { id: "quote", title: "Like and quote", brief: "Like our post, then quote it and tell people why you're enlisting. Paste your quote link below.", xp: 250, proof: "link", placeholder: "https://x.com/you/status/…" },
-  { id: "tag", title: "Tag 3 friends", brief: "Comment $INTEL on the same post and tag 3 friends who should enlist. Paste the link to your comment.", xp: 200, proof: "link", placeholder: "https://x.com/you/status/…" },
+  { id: "tag", title: "Reply $INTEL", brief: "Reply $INTEL under the same post and drop your wallet too. Paste the link to your reply.", xp: 200, proof: "link", placeholder: "https://x.com/you/status/…" },
   { id: "era", title: "Your era", brief: "When did you pick up your first NFT? Tell us where you were back then too, if you want.", xp: 100, proof: "text", placeholder: "2021, minting pixel art at 3am…" },
 ];
 

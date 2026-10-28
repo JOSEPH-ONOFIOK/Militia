@@ -72,7 +72,7 @@ function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } 
   if (APPROVAL_POST_ID && !r.approved) return { cmd: "approve", title: "Get approved: follow, repost, reply $INTEL + tag a friend", xp: "Pending →" };
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
   if (!r.missions.quote) return { cmd: "quote", title: "Like and quote our post", xp: `+${m("quote").xp}` };
-  if (!r.missions.tag) return { cmd: "tag", title: "Tag 3 friends", xp: `+${m("tag").xp}` };
+  if (!r.missions.tag) return { cmd: "tag", title: "Reply $INTEL and drop your wallet", xp: `+${m("tag").xp}` };
   if (!r.missions.era) return { cmd: "era", title: "Tell us your era", xp: `+${m("era").xp}` };
   if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
   return { cmd: "recruit", title: "Invite friends with your link", xp: `+${XP.perReferral} each` };

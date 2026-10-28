@@ -14,7 +14,7 @@ type Props = {
   highlightWallet?: boolean;
 };
 
-// The numbered task list: join, follow, like and quote, tag 3 friends, your era, your wallet
+// The numbered task list: join, follow, like and quote, reply $INTEL, your era, your wallet
 export default function Steps({ me, onFollow, onProof, onWallet, onInvite, highlightWallet }: Props) {
   const locked = !me;
   let n = 1;
