@@ -8,14 +8,35 @@ export const X_PROFILE = `https://x.com/${X_HANDLE}`;
 const PINNED_ID = /(?:x|twitter)\.com\/\w+\/status(?:es)?\/(\d+)/i.exec(process.env.NEXT_PUBLIC_PINNED_POST ?? "")?.[1];
 export const PINNED_POST = PINNED_ID ? `https://x.com/${X_HANDLE}/status/${PINNED_ID}` : X_PROFILE;
 
-export type MissionId = "follow" | "repost" | "share" | "notify";
+export type MissionId = "follow" | "quote" | "tag" | "era";
+type ProofKind = "none" | "link" | "text";
 
-export const MISSIONS: { id: MissionId; title: string; brief: string; xp: number }[] = [
-  { id: "follow", title: "Report to command", brief: `Follow @${X_HANDLE} on X`, xp: 100 },
-  { id: "repost", title: "Signal boost", brief: "Like + repost the pinned transmission", xp: 150 },
-  { id: "share", title: "Show your dog tags", brief: "Post your Draft Card on X", xp: 250 },
-  { id: "notify", title: "Radio check", brief: `Turn on post notifications for @${X_HANDLE}`, xp: 50 },
+// The numbered steps, in order. Step 1 is joining the draft (signing in) and the wallet is the last step.
+export const MISSIONS: { id: MissionId; title: string; brief: string; xp: number; proof: ProofKind; placeholder?: string }[] = [
+  { id: "follow", title: `Follow @${X_HANDLE}`, brief: "That's where the list, the mint date and everything else gets posted first.", xp: 100, proof: "none" },
+  { id: "quote", title: "Like and quote", brief: "Like our post, then quote it and tell people why you're enlisting. Paste your quote link below.", xp: 250, proof: "link", placeholder: "https://x.com/you/status/…" },
+  { id: "tag", title: "Tag 3 friends", brief: "Comment on the same post tagging 3 friends who should enlist. Paste the link to your comment.", xp: 200, proof: "link", placeholder: "https://x.com/you/status/…" },
+  { id: "era", title: "Your era", brief: "When did you pick up your first NFT? Tell us where you were back then too, if you want.", xp: 100, proof: "text", placeholder: "2021, minting pixel art at 3am…" },
 ];
+
+const POST_LINK = /(?:https?:\/\/)?(?:www\.|mobile\.)?(?:x|twitter)\.com\/(\w{1,15})\/status(?:es)?\/(\d+)/i;
+
+// Checks the proof for a step and returns the cleaned value to store.
+export function checkProof(id: MissionId, raw: unknown): { ok: true; value?: string } | { ok: false; error: string } {
+  const def = MISSIONS.find((m) => m.id === id);
+  if (!def) return { ok: false, error: "Unknown task" };
+  const input = String(raw ?? "").trim();
+  if (def.proof === "none") return { ok: true };
+  if (def.proof === "text") {
+    if (input.length < 2) return { ok: false, error: "Tell us a little more." };
+    if (input.length > 280) return { ok: false, error: "Keep it under 280 characters." };
+    return { ok: true, value: input };
+  }
+  const m = POST_LINK.exec(input);
+  if (!m) return { ok: false, error: "Paste the link to your post on X. It looks like x.com/you/status/123…" };
+  if (PINNED_ID && m[2] === PINNED_ID) return { ok: false, error: "That's our post. Paste the link to your own quote or comment." };
+  return { ok: true, value: `https://x.com/${m[1]}/status/${m[2]}` };
+}
 
 export const XP = {
   enlist: 100,
@@ -49,12 +70,13 @@ export type Recruit = {
   referredBy?: string;
   referrals: number;
   missions: Partial<Record<MissionId, number>>; // timestamp completed
+  proofs?: Partial<Record<MissionId, string>>; // quote and comment links, era answer; never sent to other visitors
   wallet?: string;
   createdAt: number;
   rev?: number; // revision, used by the Google Sheets store to detect concurrent saves
 };
 
-export type PublicRecruit = Omit<Recruit, "wallet" | "xid"> & { xp: number; hasWallet: boolean };
+export type PublicRecruit = Omit<Recruit, "wallet" | "xid" | "proofs"> & { xp: number; hasWallet: boolean };
 
 export function computeXp(r: Recruit) {
   let xp = XP.enlist;
@@ -72,7 +94,7 @@ export function rankFor(xp: number) {
 
 export function toPublic(r: Recruit): PublicRecruit {
   // eslint-disable-next-line @typescript-eslint/no-unused-vars
-  const { wallet, xid, ...rest } = r;
+  const { wallet, xid, proofs, ...rest } = r;
   return { ...rest, xp: computeXp(r), hasWallet: !!wallet };
 }
 

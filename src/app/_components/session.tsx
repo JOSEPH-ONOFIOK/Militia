@@ -1,7 +1,7 @@
 "use client";
 
 import { createContext, useCallback, useContext, useEffect, useRef, useState, type ReactNode } from "react";
-import { MISSIONS, isValidWallet, toPublic, type MissionId, type PublicRecruit, type Recruit } from "@/lib/game";
+import { checkProof, isValidWallet, toPublic, type MissionId, type PublicRecruit, type Recruit } from "@/lib/game";
 import { isValidHandle, normalizeHandle, soldierIdForHandle } from "@/lib/swole";
 
 export type AuthInfo = { mode: "x" | "handle"; storage: "server" | "local"; turnstileSiteKey: string | null };
@@ -29,8 +29,10 @@ function localAction(r: Recruit, path: string, body: Record<string, unknown>): s
   switch (path) {
     case "/api/mission": {
       const m = String(body.mission) as MissionId;
-      if (!MISSIONS.some((x) => x.id === m)) return "Unknown mission";
+      const proof = checkProof(m, body.proof);
+      if (!proof.ok) return proof.error;
       r.missions[m] ??= Date.now();
+      if (proof.value) r.proofs = { ...r.proofs, [m]: proof.value };
       return null;
     }
     case "/api/wallet": {

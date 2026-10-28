@@ -72,6 +72,14 @@ No script redeploy is needed: Script Properties apply immediately. To check,
 open your web app URL with `?version` on the end. It should show
 `"secured":true`. Run `selfTest` again and it reports `shared secret : on`.
 
+## Updating an existing sheet to version 3
+
+Version 3 adds the Quote Link, Comment Link and Era columns. Paste the new
+`Code.gs` and deploy a new version (below). The script adds the three headers to
+your existing sheet on its next save and refreshes the Leaderboard tab; nothing
+else moves. Until you redeploy, the answers are still saved, inside the hidden
+Data column.
+
 ## Re-deploying after an edit
 
 A new deployment gets a new URL. To keep the existing one:
@@ -96,6 +104,9 @@ A new deployment gets a new URL. To keep the existing one:
 | Joined At, Updated At | Timestamps |
 | X User ID | Set when Sign in with X is on |
 | Data | Hidden. The full record the site reads back. **Do not edit it.** |
+| Quote Link | Link to their quote of your post (step 3) |
+| Comment Link | Link to their comment tagging 3 friends (step 4) |
+| Era | Their answer to "When did you pick up your first NFT?" (step 5) |
 
 **Leaderboard** is the same list sorted by XP, kept up to date by a formula.
 Browse and filter there. Sorting or filtering the Recruits tab is also safe:

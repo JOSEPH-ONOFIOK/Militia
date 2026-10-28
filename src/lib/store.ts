@@ -239,6 +239,7 @@ function merge(mine: Recruit, theirs: Recruit): Recruit {
     ...theirs,
     ...mine,
     missions,
+    proofs: { ...theirs.proofs, ...mine.proofs },
     referrals: Math.max(mine.referrals, theirs.referrals),
     wallet: mine.wallet ?? theirs.wallet,
     xid: theirs.xid ?? mine.xid,

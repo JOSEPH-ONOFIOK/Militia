@@ -25,7 +25,7 @@
  */
 
 /** Bumped whenever this file changes, so `?version` shows which copy is deployed. */
-var SCRIPT_VERSION = 2;
+var SCRIPT_VERSION = 3;
 
 var SHEET_NAME = 'Recruits';
 var BOARD_NAME = 'Leaderboard';
@@ -51,6 +51,10 @@ var HEADERS = [
   'Updated At',
   'X User ID',
   'Data',
+  // Added in version 3, after Data so older sheets keep their column layout
+  'Quote Link',
+  'Comment Link',
+  'Era',
 ];
 
 /**
@@ -187,6 +191,10 @@ function buildRow(r, d) {
   row[col('Updated At') - 1] = new Date().toISOString();
   row[col('X User ID') - 1] = r.xid || '';
   row[col('Data') - 1] = JSON.stringify(r);
+  var p = r.proofs || {};
+  row[col('Quote Link') - 1] = safeText(p.quote);
+  row[col('Comment Link') - 1] = safeText(p.tag);
+  row[col('Era') - 1] = safeText(p.era);
   return row;
 }
 
@@ -239,21 +247,45 @@ function getSheet() {
     sheet.setFrozenRows(1);
     sheet.hideColumns(col('Data'));
     ensureBoard(ss);
+    return sheet;
+  }
+
+  // A sheet made by an older version is missing the newer headers: add them, and refresh the board
+  var head = sheet.getRange(1, 1, 1, HEADERS.length).getValues()[0];
+  var missing = false;
+  for (var i = 0; i < HEADERS.length; i++) {
+    if (String(head[i] || '') === '') {
+      sheet.getRange(1, i + 1).setValue(HEADERS[i]);
+      missing = true;
+    }
+  }
+  if (missing) {
+    sheet.getRange(1, 1, 1, HEADERS.length).setFontWeight('bold');
+    ensureBoard(ss);
   }
   return sheet;
 }
 
-/** A read only tab that always shows recruits sorted by XP, for the team to browse. */
+// Text a visitor typed must never run as a formula in the sheet
+function safeText(v) {
+  var t = String(v || '');
+  return /^[=+\-@]/.test(t) ? "'" + t : t;
+}
+
+/** A read only tab that always shows recruits sorted by XP (everything except Data), for the team to browse. */
 function ensureBoard(ss) {
-  if (ss.getSheetByName(BOARD_NAME)) return;
-  var board = ss.insertSheet(BOARD_NAME);
-  var shown = HEADERS.length - 1; // everything except Data
-  board.getRange(1, 1, 1, shown).setValues([HEADERS.slice(0, shown)]);
-  board.getRange(1, 1, 1, shown).setFontWeight('bold');
+  var board = ss.getSheetByName(BOARD_NAME) || ss.insertSheet(BOARD_NAME);
+  var letter = function (n) { return String.fromCharCode(64 + n); };
+  var d = col('Data');
+  var shown = HEADERS.filter(function (h) { return h !== 'Data'; });
+  var parts = [];
+  if (d > 1) parts.push(SHEET_NAME + '!A2:' + letter(d - 1));
+  if (d < HEADERS.length) parts.push(SHEET_NAME + '!' + letter(d + 1) + '2:' + letter(HEADERS.length));
+  board.getRange(1, 1, 1, shown.length).setValues([shown]);
+  board.getRange(1, 1, 1, shown.length).setFontWeight('bold');
   board.setFrozenRows(1);
-  var last = String.fromCharCode(64 + shown);
   board.getRange('A2').setFormula(
-    '=IFERROR(SORT(FILTER(' + SHEET_NAME + '!A2:' + last + ', ' + SHEET_NAME + '!A2:A<>""), ' + col('XP') + ', FALSE), "")'
+    '=IFERROR(SORT(FILTER({' + parts.join(', ') + '}, ' + SHEET_NAME + '!A2:A<>""), ' + col('XP') + ', FALSE), "")'
   );
 }
 

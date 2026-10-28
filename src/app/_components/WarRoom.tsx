@@ -1,7 +1,7 @@
 "use client";
 
-import { Fragment, useCallback, useEffect, useRef, useState } from "react";
-import { MISSIONS, PINNED_POST, RANKS, SECURED_AT, X_HANDLE, X_PROFILE, XP, rankFor, type MissionId, type PublicRecruit } from "@/lib/game";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { MISSIONS, RANKS, SECURED_AT, X_HANDLE, X_PROFILE, XP, rankFor, type MissionId, type PublicRecruit } from "@/lib/game";
 import { CATEGORIES, SUPPLY, getSoldier, gifSrc, isValidHandle, normalizeHandle, rarityClass, serialFor, traitPct } from "@/lib/swole";
 import { useSession } from "./session";
 import Radar, { type Blip } from "./Radar";
@@ -13,16 +13,17 @@ import Promotion from "./Promotion";
 import Countdown from "./Countdown";
 import Sheet from "./Sheet";
 import Dossier from "./Dossier";
+import Steps from "./Steps";
 import { FACTIONS, factionOf, standings } from "@/lib/factions";
 import { beep, chord, err, setSound, soundOn } from "./sound";
 import type { IconType } from "react-icons";
 import { FaXTwitter } from "react-icons/fa6";
 import {
-  LuArrowDown, LuArrowRight, LuArrowUpRight, LuBell, LuCheck, LuChevronRight, LuCircleHelp, LuCrosshair,
-  LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuRepeat2, LuShare2,
+  LuArrowDown, LuArrowRight, LuChevronRight, LuCircleHelp, LuCrosshair,
+  LuDownload, LuGauge, LuLink, LuListChecks, LuLock, LuLogIn, LuLogOut, LuMedal, LuRadar, LuShare2,
   LuShieldCheck, LuSparkles, LuTarget, LuTerminal, LuTrophy, LuUserPlus, LuUserRound, LuUsers,
   LuWallet, LuX, LuZap, LuFileText, LuSwords, LuShield,
-  LuPanelLeftClose, LuPanelLeftOpen, LuPanelRightClose, LuPanelRightOpen,
+  LuPanelLeftClose, LuPanelLeftOpen, LuPanelRightClose, LuPanelRightOpen, LuQuote, LuAtSign, LuHourglass,
 } from "react-icons/lu";
 
 type Tone = "ink" | "dim" | "amber" | "green" | "red" | "echo" | "pink";
@@ -30,12 +31,7 @@ type Line = { id: number; text: string; tone: Tone };
 type Intel = { count: number; top: PublicRecruit[]; recent: { handle: string; soldierId: number }[]; blips: Blip[] };
 type Focus = { id: number; handle?: string };
 
-const MISSION_LINK: Record<MissionId, string> = {
-  follow: `https://x.com/intent/follow?screen_name=${X_HANDLE}`,
-  repost: PINNED_POST,
-  share: "",
-  notify: X_PROFILE,
-};
+const FOLLOW_LINK = `https://x.com/intent/follow?screen_name=${X_HANDLE}`;
 
 const pad = (n: number, w = 4) => String(n).padStart(w, "0");
 
@@ -49,9 +45,6 @@ const nudgeSnoozed = () => {
     return false;
   }
 };
-
-// Where the wallet task sits in the order: right after this mission
-const WALLET_AFTER: MissionId = "repost";
 
 const PHONE_TABS: MView[] = ["radar", "tasks", "you", "board"];
 const PANELS_KEY = "militia:panels";
@@ -68,7 +61,7 @@ const QUICK_ICON: Record<string, IconType> = {
 };
 
 const TASK_ICON: Record<string, IconType> = {
-  follow: LuUserPlus, repost: LuRepeat2, share: LuShare2, notify: LuBell,
+  follow: LuUserPlus, quote: LuQuote, tag: LuAtSign, era: LuHourglass,
   wallet: LuWallet, recruit: LuUsers,
 };
 
@@ -76,10 +69,10 @@ const TASK_ICON: Record<string, IconType> = {
 function nextStep(r: PublicRecruit): { cmd: string; title: string; xp: string } {
   const m = (id: MissionId) => MISSIONS.find((x) => x.id === id)!;
   if (!r.missions.follow) return { cmd: "follow", title: `Follow @${X_HANDLE} on X`, xp: `+${m("follow").xp}` };
-  if (!r.missions.repost) return { cmd: "repost", title: "Like + repost the pinned post", xp: `+${m("repost").xp}` };
+  if (!r.missions.quote) return { cmd: "quote", title: "Like and quote our post", xp: `+${m("quote").xp}` };
+  if (!r.missions.tag) return { cmd: "tag", title: "Tag 3 friends", xp: `+${m("tag").xp}` };
+  if (!r.missions.era) return { cmd: "era", title: "Tell us your era", xp: `+${m("era").xp}` };
   if (!r.hasWallet) return { cmd: "wallet", title: "Add your mint wallet", xp: `+${XP.wallet}` };
-  if (!r.missions.share) return { cmd: "share", title: "Post your draft card on X", xp: `+${m("share").xp}` };
-  if (!r.missions.notify) return { cmd: "notify", title: "Turn on post notifications", xp: `+${m("notify").xp}` };
   return { cmd: "recruit", title: "Invite friends with your link", xp: `+${XP.perReferral} each` };
 }
 
@@ -403,13 +396,43 @@ export default function WarRoom() {
   async function mission(m: MissionId) {
     if (!recruit) return print(["ENLIST FIRST. ENTER YOUR X HANDLE.", "red"]);
     const def = MISSIONS.find((x) => x.id === m)!;
-    if (m === "share") return share();
-    window.open(MISSION_LINK[m], "_blank", "noopener");
-    if (recruit.missions[m]) return print([`ORDER '${m}' ALREADY COMPLETE.`, "dim"]);
+    if (def.proof !== "none") return goToStep(m);
+    window.open(FOLLOW_LINK, "_blank", "noopener");
+    if (recruit.missions[m]) return print([`STEP '${m}' ALREADY COMPLETE.`, "dim"]);
     const r = await call("/api/mission", { mission: m });
     if (r.error) return print([`! ${r.error}`, "red"]);
     beep(1320, 0.08, "triangle");
     print([`[OK] ${def.title.toUpperCase()} · +${def.xp} XP`, "green"]);
+  }
+
+  // Opens the Tasks panel on a step and puts the cursor in its field
+  function goToStep(id: string) {
+    setTab("tasks");
+    setMview("tasks");
+    toggleRight(true);
+    setCoach(false);
+    setTimeout(() => {
+      const el = document.getElementById(`step-input-${id}`);
+      el?.scrollIntoView({ block: "center", behavior: "smooth" });
+      el?.focus({ preventScroll: true });
+    }, 120);
+  }
+
+  async function submitProof(id: MissionId, value: string) {
+    const def = MISSIONS.find((x) => x.id === id)!;
+    const r = await call("/api/mission", { mission: id, proof: value });
+    if (r.error) return r.error;
+    beep(1320, 0.08, "triangle");
+    print([`[OK] ${def.title.toUpperCase()} · +${def.xp} XP`, "green"]);
+    return null;
+  }
+
+  async function saveWallet(addr: string) {
+    const r = await call("/api/wallet", { wallet: addr });
+    if (r.error) return r.error;
+    beep(1320, 0.08, "triangle");
+    print([`[OK] WALLET LOCKED IN: ${addr.slice(0, 6)}…${addr.slice(-4)}`, "green"]);
+    return null;
   }
 
   function share() {
@@ -417,11 +440,8 @@ export default function WarRoom() {
     setSheet("share");
   }
 
-  async function markShared() {
-    if (recruit && !recruit.missions.share) {
-      const r = await call("/api/mission", { mission: "share" });
-      if (!r.error) print([`[OK] DOG TAGS POSTED · +${MISSIONS.find((m) => m.id === "share")!.xp} XP`, "green"]);
-    }
+  function markShared() {
+    print(["DRAFT CARD SHARED.", "green"]);
   }
 
   async function card() {
@@ -452,12 +472,10 @@ export default function WarRoom() {
     if (!recruit) return print(["ENLIST FIRST. ENTER YOUR X HANDLE.", "red"]);
     print(
       ["ACTIVE ORDERS", "amber"],
-      ...MISSIONS.flatMap((m) => [
-        [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone],
-        ...(m.id === WALLET_AFTER ? [[`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Mint wallet`, recruit.hasWallet ? "dim" : "ink"] as [string, Tone]] : []),
-      ]),
+      ...MISSIONS.map((m) => [`  [${recruit.missions[m.id] ? "x" : " "}] ${m.id.padEnd(8)} +${String(m.xp).padEnd(5)} ${m.title}`, recruit.missions[m.id] ? "dim" : "ink"] as [string, Tone]),
+      [`  [${recruit.hasWallet ? "x" : " "}] wallet   +${String(XP.wallet).padEnd(5)} Your wallet`, recruit.hasWallet ? "dim" : "ink"],
       [`  [+] recruit  +${XP.perReferral}  per soldier (${recruit.referrals} so far)`, "ink"],
-      ["TYPE AN ORDER'S NAME OR TAP IT IN THE ORDERS TAB.", "dim"],
+      ["TYPE A STEP'S NAME OR OPEN THE TASKS TAB.", "dim"],
     );
   }
 
@@ -505,7 +523,7 @@ export default function WarRoom() {
           ["COMMANDS", "amber"],
           ["  status        rank, XP, allowlist standing", "ink"],
           ["  orders        your task list", "ink"],
-          ["  follow | repost | notify | share   run an order", "ink"],
+          ["  follow | quote | tag | era   open a step", "ink"],
           ["  recruit       copy your recruitment link", "ink"],
           ["  wallet <addr> submit mint wallet", "ink"],
           ["  card          download your draft card", "ink"],
@@ -516,7 +534,8 @@ export default function WarRoom() {
         );
       case "status": return status();
       case "orders": return orders();
-      case "follow": case "repost": case "notify": case "share": return mission(cmd.toLowerCase() as MissionId);
+      case "follow": case "quote": case "tag": case "era": return mission(cmd.toLowerCase() as MissionId);
+      case "share": return share();
       case "recruit": case "ref": return recruitLink();
       case "wallet": return wallet(arg);
       case "card": return card();
@@ -591,6 +610,7 @@ export default function WarRoom() {
   const onQuick = (e: React.MouseEvent<HTMLButtonElement>) => {
     const c = e.currentTarget.dataset.cmd!;
     if (c === "wallet") setSheet("wallet");
+    else if (c === "quote" || c === "tag" || c === "era") goToStep(c);
     else if (c === "file" && recruit) setFileOf({ id: recruit.soldierId, handle: recruit.handle });
     else exec(c);
   };
@@ -906,15 +926,14 @@ export default function WarRoom() {
                   </div>
                 </div>
               )}
-              {MISSIONS.map((m) => (
-                <Fragment key={m.id}>
-                  <Task icon={TASK_ICON[m.id]} title={m.title} sub={m.brief} done={!!me?.missions[m.id]} reward={`+${m.xp} XP`} cta="Go" data-cmd={m.id} onClick={onQuick} />
-                  {/* the wallet comes right after like + repost */}
-                  {m.id === WALLET_AFTER && <Task highlight={!!me && !me.hasWallet} icon={LuWallet} title="Mint wallet" sub="Robinhood Chain or Ethereum address" done={!!me?.hasWallet} reward={`+${XP.wallet} XP`} cta="Add" data-cmd="wallet" onClick={onQuick} />}
-                </Fragment>
-              ))}
-              <Task icon={LuUsers} title="Invite friends" sub={me ? `${me.referrals} joined through your link` : "Copy your invite link"} reward={`+${XP.perReferral} each`} cta="Copy" data-cmd="recruit" onClick={onQuick} />
-              {!me && <p className="muted fine">Sign in with X to unlock tasks.</p>}
+              <Steps
+                me={me}
+                onFollow={() => mission("follow")}
+                onProof={submitProof}
+                onWallet={saveWallet}
+                onInvite={() => exec("recruit")}
+                highlightWallet
+              />
             </div>
           )}
 
@@ -1053,24 +1072,5 @@ export default function WarRoom() {
       )}
 
     </div>
-  );
-}
-
-function Task({ icon: Icon, title, sub, done, doneLabel = "Done", reward, cta, highlight, ...rest }: {
-  icon: IconType; title: string; sub: string; done?: boolean; doneLabel?: string; reward: string; cta: string; highlight?: boolean;
-} & React.ButtonHTMLAttributes<HTMLButtonElement> & { "data-cmd": string }) {
-  return (
-    <button className={`task ${done ? "done" : ""} ${highlight && !done ? "attention" : ""}`} {...rest}>
-      <span className="task-ico">{done ? <LuCheck aria-hidden /> : <Icon aria-hidden />}</span>
-      <span className="task-body"><b>{title}</b><small>{sub}</small></span>
-      <span className="task-end">
-        {done ? <span className="task-done">{doneLabel}</span> : (
-          <>
-            <span className="task-xp">{reward}</span>
-            <span className="task-cta">{cta}<LuArrowUpRight aria-hidden /></span>
-          </>
-        )}
-      </span>
-    </button>
   );
 }
